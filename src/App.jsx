@@ -282,27 +282,46 @@ function GroupLabel({ children, style }) {
   );
 }
 
-function Hero({ label, value, valueColor, badge, sub }) {
+function Hero({ label, value, valueColor, badge, sub, icon = "dashboard" }) {
   const [visible, setVisible] = useState(true);
   return (
-    <div style={{ marginBottom: 32, position: "relative" }}>
+    <div style={{ marginBottom: 30, position: "relative", textAlign: "center" }}>
       <div
         aria-hidden
         style={{
           position: "absolute",
-          top: -40,
-          left: -20,
-          width: 200,
-          height: 160,
+          top: -30,
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: 220,
+          height: 190,
           background: `radial-gradient(closest-side, ${C.brandBg}, transparent)`,
           pointerEvents: "none",
           zIndex: 0,
         }}
       />
-      <div style={{ position: "relative", fontSize: 11.5, color: C.textFaint, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 12 }}>
+      <div style={{ position: "relative", display: "flex", justifyContent: "center", marginBottom: 14 }}>
+        <div
+          style={{
+            width: 46,
+            height: 46,
+            borderRadius: "50%",
+            background: C.cardAlt,
+            border: `1px solid ${C.brandBorder}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: C.brand,
+            boxShadow: `0 0 0 6px ${C.brandBg}`,
+          }}
+        >
+          <Icon name={icon} size={19} strokeWidth={1.8} />
+        </div>
+      </div>
+      <div style={{ position: "relative", fontSize: 11.5, color: C.textFaint, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 }}>
         {label}
       </div>
-      <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
         <div
           style={{
             fontSize: 44,
@@ -338,9 +357,10 @@ function QuickActions({ items }) {
     <div
       style={{
         display: "flex",
-        gap: 8,
-        marginBottom: 26,
+        gap: 6,
+        marginBottom: 28,
         overflowX: "auto",
+        justifyContent: "center",
         scrollbarWidth: "none",
         WebkitOverflowScrolling: "touch",
       }}
@@ -352,22 +372,37 @@ function QuickActions({ items }) {
           className="fin-tap"
           style={{
             flexShrink: 0,
-            display: "inline-flex",
+            width: 68,
+            display: "flex",
+            flexDirection: "column",
             alignItems: "center",
-            gap: 7,
-            padding: "10px 18px 10px 14px",
-            borderRadius: 999,
+            gap: 8,
+            padding: "2px 2px 0",
+            background: "transparent",
+            border: "none",
             cursor: "pointer",
-            background: it.primary ? C.brand : C.cardAlt,
-            border: it.primary ? "1px solid transparent" : `1px solid ${C.border}`,
-            color: it.primary ? C.brandOn : C.text,
             fontFamily: FONT,
-            whiteSpace: "nowrap",
-            transition: "transform 0.12s ease, background 0.15s ease",
+            transition: "transform 0.12s ease",
           }}
         >
-          <Icon name={it.icon} size={15} strokeWidth={2.2} />
-          <span style={{ fontSize: 12.5, fontWeight: 700 }}>{it.label}</span>
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: it.primary ? C.brand : C.cardAlt,
+              border: it.primary ? "1px solid transparent" : `1px solid ${C.border}`,
+              color: it.primary ? C.brandOn : C.text,
+              boxShadow: it.primary ? `0 6px 16px -6px ${C.brandBorder}` : "none",
+              transition: "background 0.15s ease, box-shadow 0.15s ease",
+            }}
+          >
+            <Icon name={it.icon} size={19} strokeWidth={2} />
+          </div>
+          <span style={{ fontSize: 10.5, fontWeight: 700, color: C.textMuted, textAlign: "center", lineHeight: 1.2 }}>{it.label}</span>
         </button>
       ))}
     </div>
@@ -744,7 +779,7 @@ function Login() {
             style={{
               width: 56,
               height: 56,
-              borderRadius: 16,
+              borderRadius: "50%",
               background: C.brand,
               display: "flex",
               alignItems: "center",
@@ -1333,7 +1368,7 @@ function AppInner({ user }) {
               style={{
                 width: 36,
                 height: 36,
-                borderRadius: 12,
+                borderRadius: "50%",
                 background: C.brand,
                 display: "flex",
                 alignItems: "center",
@@ -1740,6 +1775,7 @@ function Dashboard({ state, calc, onNavigate }) {
         valueColor={ahorroColor}
         badge={calc.salud !== "info" && <Chip estado={calc.salud} />}
         sub={calc.saludMsg}
+        icon="trend"
       />
 
       <QuickActions
@@ -1823,6 +1859,7 @@ function Petnova({ state, update, calc }) {
         value={fmt(calc.totalIngresosPetnovaLocal)}
         valueColor={C.money}
         sub={`Equivale a ${fmtUsd(calc.totalIngresosPetnovaUSD)}`}
+        icon="cat"
       />
 
       <div className="fin-2col">
@@ -1935,6 +1972,7 @@ function Personal({ state, update, calc }) {
         value={fmt(calc.ahorroNeto)}
         valueColor={calc.ahorroNeto >= 0 ? C.money : C.bad}
         sub={`Meta de ahorro: ${pct(state.config.pctAhorro)} de tus ingresos`}
+        icon="user"
       />
 
       <div className="fin-2col">
@@ -2052,6 +2090,7 @@ function Presupuesto({ state, update }) {
         value={fmt(totalGastado)}
         valueColor={heroColor}
         sub={totalLimite > 0 ? `${fmt(totalLimite)} presupuestado · ${pct(pctTotal)} usado` : "Define un límite por categoría para hacer seguimiento."}
+        icon="target"
       />
 
       <GroupLabel>Categorías</GroupLabel>
@@ -2124,6 +2163,7 @@ function Metas({ state, update, calc }) {
         value={pct(calc.pctFondo)}
         valueColor={calc.pctFondo >= 1 ? C.money : C.text}
         sub={`${fmt(state.fondoAhorrado || 0)} de ${fmt(calc.metaFondoEmergencia)} objetivo`}
+        icon="trophy"
       />
 
       <GroupLabel>Fondo de emergencia</GroupLabel>
@@ -2235,6 +2275,7 @@ function Historial({ state, update, calc }) {
         label="Patrimonio actual"
         value={fmt(patrimonioActual)}
         sub={`Promedio de ahorro reciente: ${fmt(calc.promAhorro)}/mes`}
+        icon="trend"
       />
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
