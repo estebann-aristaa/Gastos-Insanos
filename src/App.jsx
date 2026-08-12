@@ -76,6 +76,32 @@ const CATS_PERSONAL = [
 ];
 const CATS_NEGOCIO = ["Ads/Pauta", "Herramientas/Software", "Contenido (edición, freelance)", "Hosting/Dominios", "Comisiones Hotmart/ManyChat", "Otro gasto operativo"];
 
+/* Íconos por categoría — solo uso visual, no altera CATS_PERSONAL/CATS_NEGOCIO */
+const CATEGORY_ICONS = {
+  "Arriendo/Vivienda": "home",
+  "Servicios (luz/agua/internet)": "bolt",
+  "Mercado": "cart",
+  "Transporte": "car",
+  "Salud": "heart",
+  "Deudas": "creditcard",
+  "Restaurantes": "utensils",
+  "Entretenimiento": "film",
+  "Compras personales": "bag",
+  "Suscripciones": "refresh",
+  "Viajes": "plane",
+  "Ahorro": "target",
+  "Inversión": "trend",
+  "Otro": "dots",
+};
+const NEGOCIO_ICONS = {
+  "Ads/Pauta": "megaphone",
+  "Herramientas/Software": "settings",
+  "Contenido (edición, freelance)": "pencil",
+  "Hosting/Dominios": "server",
+  "Comisiones Hotmart/ManyChat": "percent",
+  "Otro gasto operativo": "dots",
+};
+
 const DEFAULT_STATE = {
   config: { tasaRef: 4000, sueldo: 0, pctNecesidad: 0.5, pctGusto: 0.3, pctAhorro: 0.2, mesesFondo: 6, umbralHormiga: 30000, tasaAutoFecha: null },
   ingresosPetnova: [],
@@ -121,6 +147,21 @@ const Icon = ({ name, size = 18, color = "currentColor", strokeWidth = 1.8 }) =>
     menu: <><path d="M4 7h16M4 12h16M4 17h16" /></>,
     portfolio: <><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" /></>,
     logout: <><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" /></>,
+    home: <><path d="M4 11l8-7 8 7" /><path d="M6 10v9a1 1 0 001 1h3v-6h4v6h3a1 1 0 001-1v-9" /></>,
+    bolt: <path d="M13 2L5 14h6l-1 8 9-12h-6l1-8z" />,
+    cart: <><circle cx="9" cy="20" r="1.3" fill={color} /><circle cx="18" cy="20" r="1.3" fill={color} /><path d="M2.5 3h2l2.3 12.2a2 2 0 002 1.8h8.4a2 2 0 002-1.7L20.5 7.5H6" /></>,
+    car: <><path d="M4.5 16V11.5l2-5h11l2.5 5V16" /><path d="M3.5 16h17" /><circle cx="7.5" cy="17.6" r="1.5" /><circle cx="16.5" cy="17.6" r="1.5" /></>,
+    heart: <path d="M12 20s-7.2-4.4-9.6-9C1 8 2 4.7 5.4 4.1c2-.3 4 .8 6.6 3.4 2.6-2.6 4.6-3.7 6.6-3.4C21.9 4.7 23 8 21.6 11 19.2 15.6 12 20 12 20z" />,
+    creditcard: <><rect x="2.5" y="5.5" width="19" height="13" rx="2" /><path d="M2.5 10.2h19" /></>,
+    utensils: <><path d="M7 2v6.4a2 2 0 004 0V2M9 8.4V22" /><path d="M16.5 2c-1.4 0-2.3 2-2.3 4.4s.9 4.4 2.3 4.4 2.3-2 2.3-4.4S17.9 2 16.5 2zM16.5 10.8V22" /></>,
+    film: <><rect x="3" y="4.5" width="18" height="15" rx="2" /><path d="M3 9.2h18M3 15h18M8.2 4.5v15M15.8 4.5v15" /></>,
+    bag: <><path d="M6.5 8h11l1 12.2a2 2 0 01-2 1.8H7.5a2 2 0 01-2-1.8L6.5 8z" /><path d="M9 8V6a3 3 0 016 0v2" /></>,
+    plane: <path d="M21.5 2.5L11 13M21.5 2.5L14.7 21l-3.4-7.7L3.5 10l18-7.5z" />,
+    dots: <><circle cx="5" cy="12" r="1.6" fill={color} /><circle cx="12" cy="12" r="1.6" fill={color} /><circle cx="19" cy="12" r="1.6" fill={color} /></>,
+    pencil: <><path d="M3.5 20.5l3.6-1 10.6-10.6-2.6-2.6L4.5 16.9l-1 3.6z" /><path d="M14.7 4.8l2.1-2.1a1.8 1.8 0 012.6 0l.9.9a1.8 1.8 0 010 2.6l-2.1 2.1" /></>,
+    server: <><rect x="3" y="4" width="18" height="6.5" rx="1.6" /><rect x="3" y="13.5" width="18" height="6.5" rx="1.6" /><circle cx="7" cy="7.2" r="0.6" fill={color} /><circle cx="7" cy="16.8" r="0.6" fill={color} /></>,
+    percent: <><circle cx="7" cy="7" r="2.3" /><circle cx="17" cy="17" r="2.3" /><path d="M19 5L5 19" /></>,
+    megaphone: <><path d="M3 9.5v5a1 1 0 001 1h1.8l6.7 3.8V4.7L5.8 8.5H4a1 1 0 00-1 1z" /><path d="M16.5 8a4 4 0 010 8" /></>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
@@ -1086,6 +1127,7 @@ function AppInner({ user }) {
   const dragState = useRef({ startX: 0, startY: 0, dragging: false, lockedAxis: null });
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const tabBtnRefs = useRef({});
   const mountTimeRef = useRef(Date.now());
 
@@ -1245,8 +1287,11 @@ function AppInner({ user }) {
     else if (dx >= threshold) goToIndex(activeIndex - 1);
   };
 
-  const BOTTOM_NAV_IDS = ["dashboard", "petnova", "personal", "presupuesto", "metas"];
+  const BOTTOM_NAV_IDS = ["dashboard", "petnova", "personal", "presupuesto"];
   const bottomNavTabs = TABS.filter((t) => BOTTOM_NAV_IDS.includes(t.id));
+  const MENU_TAB_IDS = ["metas", "historial", "config"];
+  const menuTabs = TABS.filter((t) => MENU_TAB_IDS.includes(t.id));
+  const menuActive = MENU_TAB_IDS.includes(tab);
 
   return (
     <div
@@ -1269,9 +1314,12 @@ function AppInner({ user }) {
         .fin-tap { -webkit-tap-highlight-color: transparent; }
         .fin-tap:active { transform: scale(0.96); }
         .fin-navbtn:active { transform: scale(0.92); }
+        .fin-sheetitem:active { background: ${C.cardHover}; }
         @media (max-width: 899px) {
           .fin-bottom-nav { display: flex; }
           .fin-swipe-area { padding-bottom: 94px; }
+          .fin-toptabs { display: none; }
+          .fin-dots { display: none; }
         }
         @media (min-width: 900px) {
           .fin-2col { grid-template-columns: 336px 1fr; gap: 28px; }
@@ -1365,7 +1413,7 @@ function AppInner({ user }) {
           </div>
         </div>
 
-        <div style={{ position: "relative" }}>
+        <div className="fin-toptabs" style={{ position: "relative" }}>
           <div
             style={{
               display: "flex",
@@ -1463,7 +1511,7 @@ function AppInner({ user }) {
         </div>
       </div>
 
-      <div className="fin-container" style={{ display: "flex", justifyContent: "center", gap: 6, paddingBottom: 20 }}>
+      <div className="fin-container fin-dots" style={{ display: "flex", justifyContent: "center", gap: 6, paddingBottom: 20 }}>
         {TABS.map((t, i) => (
           <div
             key={t.id}
@@ -1498,13 +1546,16 @@ function AppInner({ user }) {
         }}
       >
         {bottomNavTabs.map((t, i) => {
-          const active = tab === t.id;
-          const isCenter = i === Math.floor((bottomNavTabs.length - 1) / 2);
+          const active = tab === t.id && !menuOpen;
+          const isCenter = i === Math.floor(bottomNavTabs.length / 2);
           if (isCenter) {
             return (
               <button
                 key={t.id}
-                onClick={() => goToTab(t.id)}
+                onClick={() => {
+                  setMenuOpen(false);
+                  goToTab(t.id);
+                }}
                 className="fin-navbtn"
                 title={t.label}
                 style={{
@@ -1531,7 +1582,10 @@ function AppInner({ user }) {
           return (
             <button
               key={t.id}
-              onClick={() => goToTab(t.id)}
+              onClick={() => {
+                setMenuOpen(false);
+                goToTab(t.id);
+              }}
               className="fin-navbtn"
               style={{
                 background: "transparent",
@@ -1553,7 +1607,109 @@ function AppInner({ user }) {
             </button>
           );
         })}
+        <button
+          onClick={() => setMenuOpen(true)}
+          className="fin-navbtn"
+          style={{
+            background: "transparent",
+            border: "none",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 3,
+            padding: "6px 10px",
+            color: menuOpen || menuActive ? C.brand : C.textFaint,
+            cursor: "pointer",
+            fontFamily: FONT,
+            transition: "color 0.15s ease",
+            borderRadius: 12,
+          }}
+        >
+          <Icon name="menu" size={19} strokeWidth={menuOpen || menuActive ? 2.3 : 1.8} />
+          <span style={{ fontSize: 9.5, fontWeight: 700 }}>Menú</span>
+        </button>
       </div>
+
+      {menuOpen && (
+        <div
+          onClick={() => setMenuOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 70,
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: 480,
+              background: C.card,
+              border: `1px solid ${C.borderStrong}`,
+              borderBottom: "none",
+              borderRadius: "22px 22px 0 0",
+              padding: "10px 10px calc(20px + env(safe-area-inset-bottom, 0px))",
+              boxShadow: "0 -12px 32px -8px rgba(0,0,0,0.55)",
+            }}
+          >
+            <div style={{ width: 36, height: 4, borderRadius: 3, background: C.border, margin: "4px auto 14px" }} />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 10px 12px" }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: 0.8 }}>Más opciones</span>
+              <button onClick={() => setMenuOpen(false)} className="fin-tap" style={{ background: "transparent", border: "none", color: C.textFaint, padding: 4, display: "flex", cursor: "pointer" }}>
+                <Icon name="x" size={18} strokeWidth={2} />
+              </button>
+            </div>
+            {menuTabs.map((t) => {
+              const active = tab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    goToTab(t.id);
+                    setMenuOpen(false);
+                  }}
+                  className="fin-tap fin-sheetitem"
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 13,
+                    padding: "13px 10px",
+                    background: "transparent",
+                    border: "none",
+                    borderRadius: 14,
+                    cursor: "pointer",
+                    textAlign: "left",
+                    transition: "background 0.15s ease",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: "50%",
+                      background: active ? C.brandBg : C.cardAlt,
+                      color: active ? C.brand : C.textMuted,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Icon name={t.icon} size={17} strokeWidth={1.9} />
+                  </div>
+                  <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600, color: active ? C.brand : C.text }}>{t.label}</span>
+                  <Icon name="chevronRight" size={16} strokeWidth={2} color={C.textFaint} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {showTutorial && (
         <Tutorial
@@ -1731,7 +1887,7 @@ function Petnova({ state, update, calc }) {
             {state.gastosPetnova.map((g, idx) => (
               <TxRow
                 key={g.id}
-                icon="arrowDown"
+                icon={NEGOCIO_ICONS[g.categoria] || "arrowDown"}
                 iconColor={C.bad}
                 last={idx === state.gastosPetnova.length - 1}
                 onDelete={() => delGasto(g.id)}
@@ -1849,7 +2005,7 @@ function Personal({ state, update, calc }) {
               return (
                 <TxRow
                   key={g.id}
-                  icon={esHormiga ? "ant" : "arrowDown"}
+                  icon={esHormiga ? "ant" : CATEGORY_ICONS[g.categoria] || "arrowDown"}
                   iconColor={esHormiga ? C.brand : C.bad}
                   last={idx === state.gastosPersonal.length - 1}
                   onDelete={() => delGasto(g.id)}
@@ -1906,8 +2062,8 @@ function Presupuesto({ state, update }) {
           const p = limite > 0 ? gastado / limite : 0;
           const estado = limite === 0 ? null : p < 0.8 ? "bien" : p <= 1 ? "cerca" : "excedido";
           const color = estado === "excedido" ? C.bad : estado === "cerca" ? C.brand : C.money;
-          const tipoIcon = cat.tipo === "Necesidad" ? "portfolio" : cat.tipo === "Gusto" ? "sparkle" : "target";
           const tipoColor = cat.tipo === "Necesidad" ? C.textMuted : cat.tipo === "Gusto" ? C.brand : C.money;
+          const tipoIcon = CATEGORY_ICONS[cat.name] || "dots";
           return (
             <div key={cat.name} style={{ display: "flex", gap: 13, padding: "16px 0", borderBottom: idx < CATS_PERSONAL.length - 1 ? `1px solid ${C.divider}` : "none" }}>
               <div
