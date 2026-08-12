@@ -7,27 +7,27 @@ import { supabase } from "./supabaseClient";
    acento de marca. Inspirado en Binance / Coinbase / Atom Bank.
    ============================================================ */
 const C = {
-  bg: "#0B0E11",
-  card: "#181A20",
-  cardAlt: "#12151A",
-  cardHover: "#1E2329",
-  border: "rgba(255, 255, 255, 0.06)",
-  borderStrong: "rgba(255, 255, 255, 0.14)",
-  divider: "rgba(255, 255, 255, 0.06)",
-  text: "#EAECEF",
-  textMuted: "#848E9C",
-  textFaint: "#5E6673",
-  brand: "#F0B90B",
-  brandDk: "#B98A05",
-  brandOn: "#15130A",
-  brandBg: "rgba(240, 185, 11, 0.12)",
-  brandBorder: "rgba(240, 185, 11, 0.32)",
-  warn: "#F0B90B",
-  warnBg: "rgba(240, 185, 11, 0.12)",
-  warnBorder: "rgba(240, 185, 11, 0.32)",
-  money: "#0ECB81",
-  moneyBg: "rgba(14, 203, 129, 0.12)",
-  moneyBorder: "rgba(14, 203, 129, 0.30)",
+  bg: "#0A0C0A",
+  card: "#161915",
+  cardAlt: "#101310",
+  cardHover: "#1D211C",
+  border: "rgba(255, 255, 255, 0.07)",
+  borderStrong: "rgba(255, 255, 255, 0.16)",
+  divider: "rgba(255, 255, 255, 0.07)",
+  text: "#F1F3EE",
+  textMuted: "#8B9488",
+  textFaint: "#5C645A",
+  brand: "#A3E635",
+  brandDk: "#84CC16",
+  brandOn: "#101300",
+  brandBg: "rgba(163, 230, 53, 0.12)",
+  brandBorder: "rgba(163, 230, 53, 0.32)",
+  warn: "#F5A623",
+  warnBg: "rgba(245, 166, 35, 0.12)",
+  warnBorder: "rgba(245, 166, 35, 0.32)",
+  money: "#2ED573",
+  moneyBg: "rgba(46, 213, 115, 0.12)",
+  moneyBorder: "rgba(46, 213, 115, 0.30)",
   bad: "#F6465D",
   badBg: "rgba(246, 70, 93, 0.12)",
   badBorder: "rgba(246, 70, 93, 0.30)",
@@ -213,15 +213,18 @@ function usePersistentState(user) {
 /* ============================================================
    PRIMITIVOS VISUALES
    ============================================================ */
-function Card({ children, style, padding = "18px 20px" }) {
+function Card({ children, style, padding = "20px 22px" }) {
   return (
     <div
+      className="fin-card"
       style={{
         background: C.card,
         border: `1px solid ${C.border}`,
-        borderRadius: 12,
+        borderRadius: 16,
         padding,
         boxSizing: "border-box",
+        boxShadow: "0 1px 2px rgba(0,0,0,0.24), 0 8px 24px -12px rgba(0,0,0,0.5)",
+        transition: "border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease",
         ...style,
       }}
     >
@@ -241,21 +244,35 @@ function GroupLabel({ children, style }) {
 function Hero({ label, value, valueColor, badge, sub }) {
   const [visible, setVisible] = useState(true);
   return (
-    <div style={{ marginBottom: 26 }}>
-      <div style={{ fontSize: 11.5, color: C.textFaint, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 }}>
+    <div style={{ marginBottom: 32, position: "relative" }}>
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: -40,
+          left: -20,
+          width: 200,
+          height: 160,
+          background: `radial-gradient(closest-side, ${C.brandBg}, transparent)`,
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+      <div style={{ position: "relative", fontSize: 11.5, color: C.textFaint, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 12 }}>
         {label}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <div
           style={{
-            fontSize: 38,
-            fontWeight: 700,
-            letterSpacing: -1,
+            fontSize: 44,
+            fontWeight: 800,
+            letterSpacing: -1.4,
             lineHeight: 1,
             color: valueColor || C.text,
             fontFamily: FONT,
             fontVariantNumeric: "tabular-nums",
             wordBreak: "break-word",
+            transition: "opacity 0.15s ease",
           }}
         >
           {visible ? value : "••••••"}
@@ -263,13 +280,14 @@ function Hero({ label, value, valueColor, badge, sub }) {
         <button
           onClick={() => setVisible((v) => !v)}
           title={visible ? "Ocultar valor" : "Mostrar valor"}
-          style={{ background: "transparent", border: "none", color: C.textFaint, cursor: "pointer", display: "flex", alignItems: "center", padding: 4, flexShrink: 0 }}
+          className="fin-tap"
+          style={{ background: "transparent", border: "none", color: C.textFaint, cursor: "pointer", display: "flex", alignItems: "center", padding: 6, flexShrink: 0, borderRadius: 8, transition: "color 0.15s ease" }}
         >
           <Icon name={visible ? "eye" : "eyeOff"} size={18} strokeWidth={1.8} />
         </button>
         {badge}
       </div>
-      {sub && <div style={{ fontSize: 12.5, color: C.textMuted, marginTop: 8 }}>{sub}</div>}
+      {sub && <div style={{ position: "relative", fontSize: 12.5, color: C.textMuted, marginTop: 10 }}>{sub}</div>}
     </div>
   );
 }
@@ -290,12 +308,13 @@ function QuickActions({ items }) {
         <button
           key={it.label}
           onClick={it.onClick}
+          className="fin-tap"
           style={{
             flexShrink: 0,
             display: "inline-flex",
             alignItems: "center",
             gap: 7,
-            padding: "9px 16px 9px 12px",
+            padding: "10px 18px 10px 14px",
             borderRadius: 999,
             cursor: "pointer",
             background: it.primary ? C.brand : C.cardAlt,
@@ -303,6 +322,7 @@ function QuickActions({ items }) {
             color: it.primary ? C.brandOn : C.text,
             fontFamily: FONT,
             whiteSpace: "nowrap",
+            transition: "transform 0.12s ease, background 0.15s ease",
           }}
         >
           <Icon name={it.icon} size={15} strokeWidth={2.2} />
@@ -326,15 +346,15 @@ function Field({ value, onChange, type = "text", placeholder, style, ...props })
       style={{
         background: C.cardAlt,
         border: `1.5px solid ${focus ? C.brand : C.border}`,
-        borderRadius: 10,
-        padding: "10px 12px",
+        borderRadius: 12,
+        padding: "11px 14px",
         color: C.text,
         fontSize: 13.5,
         outline: "none",
         width: "100%",
         boxSizing: "border-box",
         fontFamily: FONT,
-        transition: "border-color 0.12s ease, box-shadow 0.12s ease",
+        transition: "border-color 0.15s ease, box-shadow 0.15s ease",
         boxShadow: focus ? `0 0 0 3px ${C.brandBg}` : "none",
         ...style,
       }}
@@ -354,8 +374,8 @@ function Dropdown({ value, onChange, options, style }) {
       style={{
         background: C.cardAlt,
         border: `1.5px solid ${focus ? C.brand : C.border}`,
-        borderRadius: 10,
-        padding: "10px 12px",
+        borderRadius: 12,
+        padding: "11px 14px",
         color: value ? C.text : C.textFaint,
         fontSize: 13.5,
         outline: "none",
@@ -383,7 +403,7 @@ function Btn({ children, onClick, variant = "primary", style, disabled, icon, ty
   const [hover, setHover] = useState(false);
   const variants = {
     primary: {
-      background: hover ? "#F8D33A" : C.brand,
+      background: hover ? C.brandDk : C.brand,
       color: C.brandOn,
       border: "1px solid transparent",
     },
@@ -405,19 +425,21 @@ function Btn({ children, onClick, variant = "primary", style, disabled, icon, ty
       disabled={disabled}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
+      className="fin-tap"
       style={{
-        padding: variant === "primary" ? "9px 18px" : "9px 15px",
-        borderRadius: variant === "primary" ? 999 : 10,
+        padding: variant === "primary" ? "10px 20px" : "10px 16px",
+        borderRadius: variant === "primary" ? 999 : 12,
         fontSize: 12.5,
         fontWeight: 700,
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.5 : 1,
-        transition: "background 0.12s ease, border-color 0.12s ease",
+        transition: "background 0.15s ease, border-color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease",
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
         fontFamily: FONT,
         letterSpacing: 0.1,
+        boxShadow: variant === "primary" && !disabled ? `0 4px 14px -4px ${C.brandBorder}` : "none",
         ...variants[variant],
         ...style,
       }}
@@ -514,11 +536,24 @@ function SectionHead({ children, badge }) {
 
 function EmptyState({ text, icon = "trend" }) {
   return (
-    <div style={{ padding: "30px 10px", textAlign: "center", color: C.textFaint }}>
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: 10, opacity: 0.4 }}>
-        <Icon name={icon} size={26} strokeWidth={1.4} />
+    <div style={{ padding: "36px 10px", textAlign: "center", color: C.textFaint }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          width: 48,
+          height: 48,
+          borderRadius: "50%",
+          background: C.cardAlt,
+          border: `1px solid ${C.border}`,
+          margin: "0 auto 14px",
+          color: C.textMuted,
+        }}
+      >
+        <Icon name={icon} size={20} strokeWidth={1.6} />
       </div>
-      <div style={{ fontSize: 12.5 }}>{text}</div>
+      <div style={{ fontSize: 12.5, maxWidth: 220, margin: "0 auto" }}>{text}</div>
     </div>
   );
 }
@@ -531,18 +566,19 @@ function IconBtn({ onClick, name = "trash", color = C.bad }) {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       title="Eliminar"
+      className="fin-tap"
       style={{
         background: hover ? `${color}18` : "transparent",
         border: "1px solid transparent",
         color,
         cursor: "pointer",
-        borderRadius: 8,
-        width: 28,
-        height: 28,
+        borderRadius: 9,
+        width: 30,
+        height: 30,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        transition: "background 0.12s ease",
+        transition: "background 0.15s ease",
         flexShrink: 0,
       }}
     >
@@ -1227,24 +1263,28 @@ function AppInner({ user }) {
       <style>{`
         .fin-container { max-width: 1160px; margin: 0 auto; width: 100%; box-sizing: border-box; }
         .fin-bottom-nav { display: none; }
-        .fin-2col { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: start; }
+        .fin-2col { display: grid; grid-template-columns: 1fr; gap: 22px; align-items: start; }
+        .fin-card:hover { border-color: ${C.borderStrong}; }
+        .fin-tap { -webkit-tap-highlight-color: transparent; }
+        .fin-tap:active { transform: scale(0.96); }
+        .fin-navbtn:active { transform: scale(0.92); }
         @media (max-width: 899px) {
           .fin-bottom-nav { display: flex; }
-          .fin-swipe-area { padding-bottom: 76px; }
+          .fin-swipe-area { padding-bottom: 94px; }
         }
         @media (min-width: 900px) {
-          .fin-2col { grid-template-columns: 336px 1fr; gap: 26px; }
+          .fin-2col { grid-template-columns: 336px 1fr; gap: 28px; }
         }
       `}</style>
 
-      <div className="fin-container" style={{ padding: "22px 24px 0 24px", position: "relative" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 20 }}>
+      <div className="fin-container" style={{ padding: "26px 24px 0 24px", position: "relative" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 24 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
             <div
               style={{
-                width: 34,
-                height: 34,
-                borderRadius: 10,
+                width: 36,
+                height: 36,
+                borderRadius: 12,
                 background: C.brand,
                 display: "flex",
                 alignItems: "center",
@@ -1385,7 +1425,7 @@ function AppInner({ user }) {
 
       <div
         className="fin-container fin-swipe-area"
-        style={{ padding: "22px 0 10px 0", position: "relative", overflow: "hidden", touchAction: "pan-y" }}
+        style={{ padding: "26px 0 10px 0", position: "relative", overflow: "hidden", touchAction: "pan-y" }}
         onTouchStart={onPanelPointerDown}
         onTouchMove={onPanelPointerMove}
         onTouchEnd={onPanelPointerUp}
@@ -1443,23 +1483,55 @@ function AppInner({ user }) {
         className="fin-bottom-nav"
         style={{
           position: "fixed",
-          left: 0,
-          right: 0,
-          bottom: 0,
+          left: 12,
+          right: 12,
+          bottom: "calc(10px + env(safe-area-inset-bottom, 0px))",
           zIndex: 60,
           background: C.card,
-          borderTop: `1px solid ${C.border}`,
-          padding: "8px 4px calc(6px + env(safe-area-inset-bottom, 0px))",
+          border: `1px solid ${C.border}`,
+          borderRadius: 22,
+          padding: "8px 6px",
           justifyContent: "space-around",
           alignItems: "center",
+          boxShadow: "0 12px 32px -8px rgba(0,0,0,0.55)",
         }}
       >
-        {bottomNavTabs.map((t) => {
+        {bottomNavTabs.map((t, i) => {
           const active = tab === t.id;
+          const isCenter = i === Math.floor((bottomNavTabs.length - 1) / 2);
+          if (isCenter) {
+            return (
+              <button
+                key={t.id}
+                onClick={() => goToTab(t.id)}
+                className="fin-navbtn"
+                title={t.label}
+                style={{
+                  background: active ? C.brand : C.cardHover,
+                  border: active ? "1px solid transparent" : `1px solid ${C.border}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 50,
+                  height: 50,
+                  borderRadius: "50%",
+                  color: active ? C.brandOn : C.text,
+                  cursor: "pointer",
+                  transform: "translateY(-14px)",
+                  boxShadow: active ? `0 8px 20px -6px ${C.brandBorder}` : "0 6px 16px -6px rgba(0,0,0,0.5)",
+                  transition: "background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease",
+                  flexShrink: 0,
+                }}
+              >
+                <Icon name={t.icon} size={21} strokeWidth={active ? 2.3 : 1.8} />
+              </button>
+            );
+          }
           return (
             <button
               key={t.id}
               onClick={() => goToTab(t.id)}
+              className="fin-navbtn"
               style={{
                 background: "transparent",
                 border: "none",
@@ -1467,10 +1539,12 @@ function AppInner({ user }) {
                 flexDirection: "column",
                 alignItems: "center",
                 gap: 3,
-                padding: "4px 8px",
+                padding: "6px 10px",
                 color: active ? C.brand : C.textFaint,
                 cursor: "pointer",
                 fontFamily: FONT,
+                transition: "color 0.15s ease",
+                borderRadius: 12,
               }}
             >
               <Icon name={t.icon} size={19} strokeWidth={active ? 2.3 : 1.8} />
