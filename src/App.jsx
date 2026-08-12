@@ -624,15 +624,15 @@ function TxRow({ icon, iconColor = C.textMuted, primary, meta, amount, amountCol
       style={{
         display: "flex",
         alignItems: "flex-start",
-        gap: 12,
-        padding: "12px 0",
+        gap: 13,
+        padding: "14px 0",
         borderBottom: last ? "none" : `1px solid ${C.divider}`,
       }}
     >
       <div
         style={{
-          width: 34,
-          height: 34,
+          width: 40,
+          height: 40,
           borderRadius: "50%",
           background: `${iconColor}18`,
           color: iconColor,
@@ -643,7 +643,7 @@ function TxRow({ icon, iconColor = C.textMuted, primary, meta, amount, amountCol
           marginTop: 1,
         }}
       >
-        <Icon name={icon} size={15} strokeWidth={2} />
+        <Icon name={icon} size={17} strokeWidth={2} />
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -653,7 +653,7 @@ function TxRow({ icon, iconColor = C.textMuted, primary, meta, amount, amountCol
 
       <div style={{ flexShrink: 0, display: "flex", alignItems: "flex-start", gap: 4 }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", minWidth: 108 }}>
-          <div style={{ color: amountColor || C.text, fontFamily: FONT, fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 13.5 }}>
+          <div style={{ color: amountColor || C.text, fontFamily: FONT, fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 14 }}>
             {amount}
           </div>
           {amountSub && <div style={{ fontSize: 10.5, color: C.textFaint, marginTop: 2, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>{amountSub}</div>}
@@ -701,9 +701,9 @@ function Login() {
         <div style={{ textAlign: "center", marginBottom: 26 }}>
           <div
             style={{
-              width: 52,
-              height: 52,
-              borderRadius: 14,
+              width: 56,
+              height: 56,
+              borderRadius: 16,
               background: C.brand,
               display: "flex",
               alignItems: "center",
@@ -711,19 +711,20 @@ function Login() {
               fontSize: 24,
               fontWeight: 900,
               color: C.brandOn,
-              margin: "0 auto 14px",
+              margin: "0 auto 16px",
+              boxShadow: `0 8px 24px -8px ${C.brandBorder}`,
             }}
           >
             $
           </div>
-          <div style={{ fontSize: 17, fontWeight: 800, color: C.text }}>Sistema Financiero</div>
-          <div style={{ fontSize: 12, color: C.textFaint, marginTop: 4 }}>Acceso privado — solo tú y tu hermano</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: C.text }}>Sistema Financiero</div>
+          <div style={{ fontSize: 12, color: C.textFaint, marginTop: 5 }}>Acceso privado — solo tú y tu hermano</div>
         </div>
 
-        <div style={{ marginBottom: 12 }}>
+        <div style={{ marginBottom: 14 }}>
           <Field type="email" placeholder="Correo" value={email} onChange={setEmail} autoComplete="username" required />
         </div>
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 18 }}>
           <Field type="password" placeholder="Contraseña" value={password} onChange={setPassword} autoComplete="current-password" required />
         </div>
 
@@ -1898,30 +1899,50 @@ function Presupuesto({ state, update }) {
       />
 
       <GroupLabel>Categorías</GroupLabel>
-      <Card>
+      <Card padding="8px 22px">
         {CATS_PERSONAL.map((cat, idx) => {
           const limite = Number(state.presupuestos[cat.name]) || 0;
           const gastado = gastadoPorCategoria(cat.name);
           const p = limite > 0 ? gastado / limite : 0;
           const estado = limite === 0 ? null : p < 0.8 ? "bien" : p <= 1 ? "cerca" : "excedido";
           const color = estado === "excedido" ? C.bad : estado === "cerca" ? C.brand : C.money;
+          const tipoIcon = cat.tipo === "Necesidad" ? "portfolio" : cat.tipo === "Gusto" ? "sparkle" : "target";
+          const tipoColor = cat.tipo === "Necesidad" ? C.textMuted : cat.tipo === "Gusto" ? C.brand : C.money;
           return (
-            <div key={cat.name} style={{ padding: "15px 0", borderBottom: idx < CATS_PERSONAL.length - 1 ? `1px solid ${C.divider}` : "none" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 10, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 14, fontWeight: 600, flex: 1, minWidth: 150 }}>{cat.name}</span>
-                <div style={{ width: 120 }}>
-                  <Field type="number" placeholder="Límite" value={state.presupuestos[cat.name] || ""} onChange={(v) => setLimite(cat.name, v)} />
-                </div>
-                {estado && <Chip estado={estado} />}
+            <div key={cat.name} style={{ display: "flex", gap: 13, padding: "16px 0", borderBottom: idx < CATS_PERSONAL.length - 1 ? `1px solid ${C.divider}` : "none" }}>
+              <div
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: "50%",
+                  background: `${tipoColor}18`,
+                  color: tipoColor,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  marginTop: 2,
+                }}
+              >
+                <Icon name={tipoIcon} size={16} strokeWidth={1.8} />
               </div>
-              {limite > 0 && (
-                <>
-                  <Meter pctValue={p} color={color} />
-                  <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
-                    {fmt(gastado)} de {fmt(limite)} · {pct(p)}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 10, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, flex: 1, minWidth: 130 }}>{cat.name}</span>
+                  <div style={{ width: 112 }}>
+                    <Field type="number" placeholder="Límite" value={state.presupuestos[cat.name] || ""} onChange={(v) => setLimite(cat.name, v)} />
                   </div>
-                </>
-              )}
+                  {estado && <Chip estado={estado} />}
+                </div>
+                {limite > 0 && (
+                  <>
+                    <Meter pctValue={p} color={color} />
+                    <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
+                      {fmt(gastado)} de {fmt(limite)} · {pct(p)}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           );
         })}
@@ -1970,23 +1991,53 @@ function Metas({ state, update, calc }) {
         <GroupLabel style={{ marginBottom: 0 }}>Mis metas</GroupLabel>
         <Btn onClick={addMeta} icon="plus">Nueva meta</Btn>
       </div>
-      <Card>
+      <Card padding={state.metas.length ? "10px" : "18px 20px"}>
         {state.metas.length === 0 && <EmptyState text="Aún no tienes metas. ¿Un viaje? ¿Un equipo nuevo?" icon="trophy" />}
         {state.metas.map((m, idx) => {
           const obj = Number(m.objetivo) || 0;
           const ah = Number(m.ahorrado) || 0;
           const p = obj > 0 ? ah / obj : 0;
           return (
-            <div key={m.id} style={{ padding: "14px 0", borderBottom: idx < state.metas.length - 1 ? `1px solid ${C.divider}` : "none" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 100px 100px 28px", gap: 8, marginBottom: 10 }}>
-                <Field placeholder="Nombre de la meta" value={m.nombre} onChange={(v) => updMeta(m.id, { nombre: v })} />
-                <Field type="number" placeholder="Objetivo" value={m.objetivo} onChange={(v) => updMeta(m.id, { objetivo: v })} />
-                <Field type="number" placeholder="Ahorrado" value={m.ahorrado} onChange={(v) => updMeta(m.id, { ahorrado: v })} />
-                <IconBtn onClick={() => delMeta(m.id)} />
+            <div
+              key={m.id}
+              style={{
+                display: "flex",
+                gap: 13,
+                padding: 14,
+                borderRadius: 14,
+                background: C.cardAlt,
+                marginBottom: idx < state.metas.length - 1 ? 10 : 0,
+              }}
+            >
+              <div
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: "50%",
+                  background: C.brandBg,
+                  color: C.brand,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  marginTop: 2,
+                }}
+              >
+                <Icon name="trophy" size={16} strokeWidth={1.8} />
               </div>
-              <Meter pctValue={p} color={C.brand} />
-              <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
-                {fmt(ah)} de {fmt(obj)} · {pct(p)}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", gap: 7, marginBottom: 8 }}>
+                  <Field placeholder="Nombre de la meta" value={m.nombre} onChange={(v) => updMeta(m.id, { nombre: v })} style={{ flex: 1 }} />
+                  <IconBtn onClick={() => delMeta(m.id)} />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 10 }}>
+                  <Field type="number" placeholder="Objetivo" value={m.objetivo} onChange={(v) => updMeta(m.id, { objetivo: v })} />
+                  <Field type="number" placeholder="Ahorrado" value={m.ahorrado} onChange={(v) => updMeta(m.id, { ahorrado: v })} />
+                </div>
+                <Meter pctValue={p} color={C.brand} />
+                <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
+                  {fmt(ah)} de {fmt(obj)} · {pct(p)}
+                </div>
               </div>
             </div>
           );
@@ -2034,25 +2085,49 @@ function Historial({ state, update, calc }) {
         <GroupLabel style={{ marginBottom: 0 }}>Historial mensual</GroupLabel>
         <Btn onClick={addMes} icon="plus">Cerrar mes</Btn>
       </div>
-      <Card style={{ marginBottom: 22 }}>
+      <Card padding={state.historial.length ? "10px" : "18px 20px"} style={{ marginBottom: 22 }}>
         {state.historial.length === 0 && <EmptyState text="Cierra tu primer mes para empezar a ver tu evolución." icon="trend" />}
         {state.historial.map((h, idx) => (
           <div
             key={h.id}
             style={{
-              display: "grid",
-              gridTemplateColumns: "110px 1fr 1fr 90px 28px",
-              gap: 8,
-              alignItems: "center",
-              padding: "10px 0",
-              borderBottom: idx < state.historial.length - 1 ? `1px solid ${C.divider}` : "none",
+              display: "flex",
+              gap: 13,
+              padding: 14,
+              borderRadius: 14,
+              background: C.cardAlt,
+              marginBottom: idx < state.historial.length - 1 ? 10 : 0,
             }}
           >
-            <Field placeholder="Ene 2026" value={h.mes} onChange={(v) => updMes(h.id, { mes: v })} />
-            <Field type="number" placeholder="Ahorro" value={h.ahorro} onChange={(v) => updMes(h.id, { ahorro: v })} />
-            <Field type="number" placeholder="Patrimonio" value={h.patrimonio} onChange={(v) => updMes(h.id, { patrimonio: v })} />
-            <div style={{ fontSize: 12, color: C.textMuted, fontFamily: FONT, fontVariantNumeric: "tabular-nums", textAlign: "right" }}>{fmt(h.patrimonio)}</div>
-            <IconBtn onClick={() => delMes(h.id)} />
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: "50%",
+                background: C.brandBg,
+                color: C.brand,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                marginTop: 2,
+              }}
+            >
+              <Icon name="trend" size={16} strokeWidth={1.8} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", gap: 7, marginBottom: 8 }}>
+                <Field placeholder="Ene 2026" value={h.mes} onChange={(v) => updMes(h.id, { mes: v })} style={{ flex: 1 }} />
+                <IconBtn onClick={() => delMes(h.id)} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
+                <Field type="number" placeholder="Ahorro" value={h.ahorro} onChange={(v) => updMes(h.id, { ahorro: v })} />
+                <Field type="number" placeholder="Patrimonio" value={h.patrimonio} onChange={(v) => updMes(h.id, { patrimonio: v })} />
+              </div>
+              <div style={{ fontSize: 11.5, color: C.textFaint, marginTop: 7, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
+                Patrimonio: {fmt(h.patrimonio)}
+              </div>
+            </div>
           </div>
         ))}
       </Card>
