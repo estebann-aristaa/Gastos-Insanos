@@ -1910,7 +1910,7 @@ function Petnova({ state, update, calc }) {
             <GroupLabel style={{ marginBottom: 0 }}>Ingresos</GroupLabel>
             <Btn onClick={addIngreso} icon="plus">Ingreso</Btn>
           </div>
-          <Card style={{ marginBottom: 22 }}>
+          <Card style={{ marginBottom: 24 }}>
             {state.ingresosPetnova.length === 0 && <EmptyState text="Aún no registras ingresos. Agrega el primero." icon="cat" />}
             {state.ingresosPetnova.map((i, idx) => (
               <TxRow
@@ -1950,7 +1950,7 @@ function Petnova({ state, update, calc }) {
             <GroupLabel style={{ marginBottom: 0 }}>Gastos operativos</GroupLabel>
             <Btn onClick={addGasto} variant="ghost" icon="plus">Gasto</Btn>
           </div>
-          <Card style={{ marginBottom: 22 }}>
+          <Card style={{ marginBottom: 24 }}>
             {state.gastosPetnova.length === 0 && <EmptyState text="Sin gastos operativos registrados aún." icon="x" />}
             {state.gastosPetnova.map((g, idx) => (
               <TxRow
