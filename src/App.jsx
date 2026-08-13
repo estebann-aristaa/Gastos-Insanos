@@ -685,18 +685,18 @@ function Row({ label, value, bold, color, last }) {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        padding: "11px 0",
+        padding: "12px 0",
         borderBottom: last ? "none" : `1px solid ${C.divider}`,
       }}
     >
-      <span style={{ color: bold ? C.text : C.textMuted, fontWeight: bold ? 700 : 400, fontSize: bold ? 14 : 13.5 }}>{label}</span>
+      <span style={{ color: bold ? C.text : C.textMuted, fontWeight: bold ? 700 : 400, fontSize: 14 }}>{label}</span>
       <span
         style={{
           color: color || C.text,
           fontFamily: FONT,
           fontVariantNumeric: "tabular-nums",
           fontWeight: 700,
-          fontSize: bold ? 14.5 : 13.5,
+          fontSize: bold ? 15 : 14,
         }}
       >
         {value}
@@ -1359,7 +1359,7 @@ function AppInner({ user }) {
       <style>{`
         .fin-container { max-width: 1160px; margin: 0 auto; width: 100%; box-sizing: border-box; }
         .fin-bottom-nav { display: none; }
-        .fin-2col { display: grid; grid-template-columns: 1fr; gap: 22px; align-items: start; }
+        .fin-2col { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; }
         .fin-card:hover { border-color: ${C.borderStrong}; }
         .fin-tap { -webkit-tap-highlight-color: transparent; }
         .fin-tap:active { transform: scale(0.96); }
@@ -1809,7 +1809,10 @@ function Dashboard({ state, calc, onNavigate }) {
 
       <div className="fin-2col">
         <div>
-          <GroupLabel>Distribución de gastos</GroupLabel>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <GroupLabel>Distribución de gastos</GroupLabel>
+            <Btn variant="text" onClick={() => onNavigate("presupuesto")} style={{ marginBottom: 10 }}>Ver todo</Btn>
+          </div>
           <Card>
             {["Necesidad", "Gusto", "Ahorro"].map((tipo, idx) => {
               const val = calc.gastosPorTipo[tipo];
@@ -1817,8 +1820,8 @@ function Dashboard({ state, calc, onNavigate }) {
               const p = meta > 0 ? val / meta : 0;
               const color = p > 1 ? C.bad : p > 0.85 ? C.brand : C.money;
               return (
-                <div key={tipo} style={{ marginBottom: idx < 2 ? 18 : 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}>
+                <div key={tipo} style={{ marginBottom: idx < 2 ? 16 : 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 8 }}>
                     <span style={{ color: C.textMuted, fontWeight: 600 }}>{tipo}</span>
                     <span style={{ color: C.textMuted, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
                       {fmt(val)} <span style={{ color: C.textFaint }}>/</span> {fmt(meta)}
@@ -1832,21 +1835,30 @@ function Dashboard({ state, calc, onNavigate }) {
         </div>
 
         <div>
-          <GroupLabel>Petnova</GroupLabel>
-          <Card style={{ marginBottom: 22 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <GroupLabel>Petnova</GroupLabel>
+            <Btn variant="text" onClick={() => onNavigate("petnova")} style={{ marginBottom: 10 }}>Ver todo</Btn>
+          </div>
+          <Card style={{ marginBottom: 24 }}>
             <Row label="Ingresos del mes" value={fmt(calc.totalIngresosPetnovaLocal)} color={C.money} />
             <Row label="Tu sueldo" value={fmt(calc.sueldo)} />
             <Row label="Reinversión" value={fmt(calc.reinversion)} color={calc.reinversion >= 0 ? C.money : C.bad} last />
           </Card>
 
-          <GroupLabel>Personal</GroupLabel>
-          <Card style={{ marginBottom: 22 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <GroupLabel>Personal</GroupLabel>
+            <Btn variant="text" onClick={() => onNavigate("personal")} style={{ marginBottom: 10 }}>Ver todo</Btn>
+          </div>
+          <Card style={{ marginBottom: 24 }}>
             <Row label="Ingresos personales" value={fmt(calc.totalIngresosPersonal)} color={C.money} />
             <Row label="Gastos personales" value={fmt(calc.totalGastosPersonal)} color={C.bad} />
             <Row label="Gasto hormiga" value={fmt(calc.gastoHormiga)} last />
           </Card>
 
-          <GroupLabel>Metas y futuro</GroupLabel>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <GroupLabel>Metas y futuro</GroupLabel>
+            <Btn variant="text" onClick={() => onNavigate("metas")} style={{ marginBottom: 10 }}>Ver todo</Btn>
+          </div>
           <Card>
             <Row label="Fondo de emergencia" value={pct(calc.pctFondo)} />
             <Row label="Proyección a 6 meses" value={fmt(calc.proyeccion[5]?.patrimonio || 0)} last />
