@@ -7,30 +7,31 @@ import { supabase } from "./supabaseClient";
    acento de marca. Inspirado en Binance / Coinbase / Atom Bank.
    ============================================================ */
 const C = {
-  bg: "#0A0C0A",
-  card: "#161915",
-  cardAlt: "#101310",
-  cardHover: "#1D211C",
-  border: "rgba(255, 255, 255, 0.07)",
-  borderStrong: "rgba(255, 255, 255, 0.16)",
-  divider: "rgba(255, 255, 255, 0.07)",
-  text: "#F1F3EE",
-  textMuted: "#8B9488",
-  textFaint: "#5C645A",
-  brand: "#A3E635",
-  brandDk: "#84CC16",
-  brandOn: "#101300",
-  brandBg: "rgba(163, 230, 53, 0.12)",
-  brandBorder: "rgba(163, 230, 53, 0.32)",
-  warn: "#F5A623",
-  warnBg: "rgba(245, 166, 35, 0.12)",
-  warnBorder: "rgba(245, 166, 35, 0.32)",
-  money: "#2ED573",
-  moneyBg: "rgba(46, 213, 115, 0.12)",
-  moneyBorder: "rgba(46, 213, 115, 0.30)",
-  bad: "#F6465D",
-  badBg: "rgba(246, 70, 93, 0.12)",
-  badBorder: "rgba(246, 70, 93, 0.30)",
+  bg: "#101212",
+  card: "#1C1D21",
+  cardAlt: "#1C1D21",
+  cardHover: "#26282C",
+  border: "rgba(75, 75, 75, 0.4)",
+  borderStrong: "rgba(75, 75, 75, 0.7)",
+  divider: "rgba(75, 75, 75, 0.35)",
+  text: "#FAFAFA",
+  textMuted: "#8C8C8C",
+  textFaint: "#4B4B4B",
+  brand: "#97DC22",
+  brandDk: "#7EC20A",
+  brandGradient: "linear-gradient(135deg, #B6FF38 0%, #7EC20A 100%)",
+  brandOn: "#0E1100",
+  brandBg: "rgba(151, 220, 34, 0.12)",
+  brandBorder: "rgba(151, 220, 34, 0.35)",
+  warn: "#FA9A2A",
+  warnBg: "rgba(250, 154, 42, 0.12)",
+  warnBorder: "rgba(250, 154, 42, 0.35)",
+  money: "#52D377",
+  moneyBg: "rgba(82, 211, 119, 0.12)",
+  moneyBorder: "rgba(82, 211, 119, 0.32)",
+  bad: "#EE3232",
+  badBg: "rgba(238, 50, 50, 0.12)",
+  badBorder: "rgba(238, 50, 50, 0.32)",
   tutorialViolet: "#8E7CFF",
   tutorialBlue: "#3DB6F2",
 };
@@ -254,14 +255,14 @@ function usePersistentState(user) {
 /* ============================================================
    PRIMITIVOS VISUALES
    ============================================================ */
-function Card({ children, style, padding = "20px 22px" }) {
+function Card({ children, style, padding = "20px" }) {
   return (
     <div
       className="fin-card"
       style={{
         background: C.card,
         border: `1px solid ${C.border}`,
-        borderRadius: 16,
+        borderRadius: 20,
         padding,
         boxSizing: "border-box",
         boxShadow: "0 1px 2px rgba(0,0,0,0.24), 0 8px 24px -12px rgba(0,0,0,0.5)",
@@ -419,19 +420,19 @@ function Field({ value, onChange, type = "text", placeholder, style, ...props })
       onBlur={() => setFocus(false)}
       type={type}
       placeholder={placeholder}
+      className="fin-field"
       style={{
         background: C.cardAlt,
-        border: `1.5px solid ${focus ? C.brand : C.border}`,
+        border: `1.5px solid ${focus ? C.borderStrong : "transparent"}`,
         borderRadius: 12,
-        padding: "11px 14px",
+        padding: "12px 16px",
         color: C.text,
-        fontSize: 13.5,
+        fontSize: 14,
         outline: "none",
         width: "100%",
         boxSizing: "border-box",
         fontFamily: FONT,
-        transition: "border-color 0.15s ease, box-shadow 0.15s ease",
-        boxShadow: focus ? `0 0 0 3px ${C.brandBg}` : "none",
+        transition: "border-color 0.15s ease",
         ...style,
       }}
       {...props}
@@ -449,17 +450,17 @@ function Dropdown({ value, onChange, options, style }) {
       onBlur={() => setFocus(false)}
       style={{
         background: C.cardAlt,
-        border: `1.5px solid ${focus ? C.brand : C.border}`,
+        border: `1.5px solid ${focus ? C.borderStrong : "transparent"}`,
         borderRadius: 12,
-        padding: "11px 14px",
-        color: value ? C.text : C.textFaint,
-        fontSize: 13.5,
+        padding: "12px 16px",
+        color: value ? C.text : C.textMuted,
+        fontSize: 14,
         outline: "none",
         width: "100%",
         boxSizing: "border-box",
         fontFamily: FONT,
         cursor: "pointer",
-        boxShadow: focus ? `0 0 0 3px ${C.brandBg}` : "none",
+        transition: "border-color 0.15s ease",
         ...style,
       }}
     >
@@ -479,21 +480,34 @@ function Btn({ children, onClick, variant = "primary", style, disabled, icon, ty
   const [hover, setHover] = useState(false);
   const variants = {
     primary: {
-      background: hover ? C.brandDk : C.brand,
+      background: C.brandGradient,
       color: C.brandOn,
       border: "1px solid transparent",
+      opacity: hover ? 0.92 : 1,
+    },
+    secondary: {
+      background: hover ? C.brandBg : "transparent",
+      color: C.brand,
+      border: `1.5px solid ${C.brand}`,
     },
     ghost: {
-      background: hover ? C.cardHover : "transparent",
-      color: C.text,
-      border: `1px solid ${C.border}`,
+      background: hover ? C.brandBg : "transparent",
+      color: C.brand,
+      border: `1.5px solid ${C.brand}`,
+    },
+    text: {
+      background: "transparent",
+      color: C.brand,
+      border: "1px solid transparent",
+      padding: "4px 2px",
     },
     danger: {
       background: hover ? C.badBg : "transparent",
       color: C.bad,
-      border: `1px solid ${C.badBorder}`,
+      border: `1.5px solid ${C.badBorder}`,
     },
   };
+  const isText = variant === "text";
   return (
     <button
       type={type}
@@ -503,13 +517,13 @@ function Btn({ children, onClick, variant = "primary", style, disabled, icon, ty
       onMouseLeave={() => setHover(false)}
       className="fin-tap"
       style={{
-        padding: variant === "primary" ? "10px 20px" : "10px 16px",
-        borderRadius: variant === "primary" ? 999 : 12,
-        fontSize: 12.5,
+        padding: isText ? "4px 2px" : variant === "primary" ? "12px 22px" : "10px 18px",
+        borderRadius: 999,
+        fontSize: isText ? 13 : 13,
         fontWeight: 700,
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.5 : 1,
-        transition: "background 0.15s ease, border-color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease",
+        transition: "background 0.15s ease, border-color 0.15s ease, transform 0.12s ease, opacity 0.15s ease",
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
@@ -522,6 +536,7 @@ function Btn({ children, onClick, variant = "primary", style, disabled, icon, ty
     >
       {icon && <Icon name={icon} size={13} strokeWidth={2.4} />}
       {children}
+      {isText && <Icon name="chevronRight" size={13} strokeWidth={2.4} />}
     </button>
   );
 }
@@ -565,8 +580,8 @@ function Chip({ estado }) {
         background: s.bg,
         color: s.txt,
         border: `1px solid ${s.border}`,
-        padding: "4px 10px 4px 7px",
-        borderRadius: 6,
+        padding: "4px 10px 4px 8px",
+        borderRadius: 999,
         fontSize: 10.5,
         fontWeight: 700,
         display: "inline-flex",
@@ -648,7 +663,7 @@ function IconBtn({ onClick, name = "trash", color = C.bad }) {
         border: "1px solid transparent",
         color,
         cursor: "pointer",
-        borderRadius: 9,
+        borderRadius: "50%",
         width: 30,
         height: 30,
         display: "flex",
@@ -793,7 +808,7 @@ function Login() {
           >
             $
           </div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: C.text }}>Sistema Financiero</div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: C.text, letterSpacing: -0.5 }}>Sistema Financiero</div>
           <div style={{ fontSize: 12, color: C.textFaint, marginTop: 5 }}>Acceso privado — solo tú y tu hermano</div>
         </div>
 
@@ -1037,7 +1052,7 @@ function SplashIntro({ onDone }) {
         @keyframes splashBar { 0% { width: 0%; } 100% { width: 100%; } }
       `}</style>
 
-      <div aria-hidden style={{ position: "absolute", top: "12%", left: "8%", width: 460, height: 460, borderRadius: "50%", background: "radial-gradient(circle, rgba(240,185,11,0.07), transparent 70%)", filter: "blur(50px)", animation: "splashDrift1 10s ease-in-out infinite" }} />
+      <div aria-hidden style={{ position: "absolute", top: "12%", left: "8%", width: 460, height: 460, borderRadius: "50%", background: "radial-gradient(circle, rgba(151,220,34,0.07), transparent 70%)", filter: "blur(50px)", animation: "splashDrift1 10s ease-in-out infinite" }} />
 
       <div style={{ position: "relative", width: 96, height: 96, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div aria-hidden style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `1.5px solid ${C.brand}55`, animation: "splashRing 1.8s ease-out infinite" }} />
@@ -1046,7 +1061,7 @@ function SplashIntro({ onDone }) {
           style={{
             width: 70,
             height: 70,
-            borderRadius: 12,
+            borderRadius: "50%",
             background: C.brand,
             display: "flex",
             alignItems: "center",
@@ -1350,6 +1365,8 @@ function AppInner({ user }) {
         .fin-tap:active { transform: scale(0.96); }
         .fin-navbtn:active { transform: scale(0.92); }
         .fin-sheetitem:active { background: ${C.cardHover}; }
+        .fin-field[required]:not(:placeholder-shown):invalid { color: ${C.bad}; }
+        .fin-field[required]:not(:placeholder-shown):valid:not(:focus) { color: ${C.money}; }
         @media (max-width: 899px) {
           .fin-bottom-nav { display: flex; }
           .fin-swipe-area { padding-bottom: 94px; }
@@ -1361,7 +1378,7 @@ function AppInner({ user }) {
         }
       `}</style>
 
-      <div className="fin-container" style={{ padding: "26px 24px 0 24px", position: "relative" }}>
+      <div className="fin-container" style={{ padding: "24px 20px 0 20px", position: "relative" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 24 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
             <div
@@ -1415,7 +1432,7 @@ function AppInner({ user }) {
               style={{
                 width: 28,
                 height: 28,
-                borderRadius: 8,
+                borderRadius: "50%",
                 background: "transparent",
                 border: `1px solid ${C.border}`,
                 color: C.textFaint,
@@ -1433,7 +1450,7 @@ function AppInner({ user }) {
               style={{
                 width: 28,
                 height: 28,
-                borderRadius: 8,
+                borderRadius: "50%",
                 background: "transparent",
                 border: `1px solid ${C.border}`,
                 color: C.textFaint,
@@ -1509,7 +1526,7 @@ function AppInner({ user }) {
 
       <div
         className="fin-container fin-swipe-area"
-        style={{ padding: "26px 0 10px 0", position: "relative", overflow: "hidden", touchAction: "pan-y" }}
+        style={{ padding: "24px 0 10px 0", position: "relative", overflow: "hidden", touchAction: "pan-y" }}
         onTouchStart={onPanelPointerDown}
         onTouchMove={onPanelPointerMove}
         onTouchEnd={onPanelPointerUp}
@@ -1522,25 +1539,25 @@ function AppInner({ user }) {
             transition: isDragging ? "none" : "transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)",
           }}
         >
-          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 24px 18px 24px", boxSizing: "border-box" }}>
+          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
             <Dashboard state={state} calc={calc} onNavigate={goToTab} />
           </div>
-          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 24px 18px 24px", boxSizing: "border-box" }}>
+          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
             <Petnova state={state} update={update} calc={calc} />
           </div>
-          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 24px 18px 24px", boxSizing: "border-box" }}>
+          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
             <Personal state={state} update={update} calc={calc} />
           </div>
-          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 24px 18px 24px", boxSizing: "border-box" }}>
+          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
             <Presupuesto state={state} update={update} />
           </div>
-          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 24px 18px 24px", boxSizing: "border-box" }}>
+          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
             <Metas state={state} update={update} calc={calc} />
           </div>
-          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 24px 18px 24px", boxSizing: "border-box" }}>
+          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
             <Historial state={state} update={update} calc={calc} />
           </div>
-          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 24px 18px 24px", boxSizing: "border-box" }}>
+          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
             <ConfigTab state={state} update={update} tasaLoading={tasaLoading} tasaError={tasaError} onRefreshTasa={refrescarTasa} />
           </div>
         </div>
@@ -1578,6 +1595,8 @@ function AppInner({ user }) {
           justifyContent: "space-around",
           alignItems: "center",
           boxShadow: "0 12px 32px -8px rgba(0,0,0,0.55)",
+          WebkitMaskImage: "radial-gradient(circle 30px at 50% 0%, transparent 98%, black 100%)",
+          maskImage: "radial-gradient(circle 30px at 50% 0%, transparent 98%, black 100%)",
         }}
       >
         {bottomNavTabs.map((t, i) => {
