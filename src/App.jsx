@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { supabase } from "./supabaseClient";
 
 /* ============================================================
    DISEÑO — "Fintech Minimal" v3
@@ -7,35 +6,43 @@ import { supabase } from "./supabaseClient";
    acento de marca. Inspirado en Binance / Coinbase / Atom Bank.
    ============================================================ */
 const C = {
-  bg: "#101212",
-  card: "#1C1D21",
-  cardAlt: "#1C1D21",
-  cardHover: "#26282C",
-  border: "rgba(75, 75, 75, 0.4)",
-  borderStrong: "rgba(75, 75, 75, 0.7)",
-  divider: "rgba(75, 75, 75, 0.35)",
-  text: "#FAFAFA",
-  textMuted: "#8C8C8C",
-  textFaint: "#4B4B4B",
-  brand: "#97DC22",
-  brandDk: "#7EC20A",
-  brandGradient: "linear-gradient(135deg, #B6FF38 0%, #7EC20A 100%)",
-  brandOn: "#0E1100",
-  brandBg: "rgba(151, 220, 34, 0.12)",
-  brandBorder: "rgba(151, 220, 34, 0.35)",
-  warn: "#FA9A2A",
-  warnBg: "rgba(250, 154, 42, 0.12)",
-  warnBorder: "rgba(250, 154, 42, 0.35)",
-  money: "#52D377",
-  moneyBg: "rgba(82, 211, 119, 0.12)",
-  moneyBorder: "rgba(82, 211, 119, 0.32)",
-  bad: "#EE3232",
-  badBg: "rgba(238, 50, 50, 0.12)",
-  badBorder: "rgba(238, 50, 50, 0.32)",
+  bg: "#0B0E11",
+  card: "#181A20",
+  cardAlt: "#12151A",
+  cardHover: "#1E2329",
+  border: "rgba(255, 255, 255, 0.06)",
+  borderStrong: "rgba(255, 255, 255, 0.14)",
+  divider: "rgba(255, 255, 255, 0.06)",
+  text: "#EAECEF",
+  textMuted: "#848E9C",
+  textFaint: "#5E6673",
+  // único acento de marca — botones primarios y elementos interactivos activos
+  brand: "#F0B90B",
+  brandDk: "#B98A05",
+  brandOn: "#15130A",
+  brandBg: "rgba(240, 185, 11, 0.12)",
+  brandBorder: "rgba(240, 185, 11, 0.32)",
+  // el ámbar de marca dobla como color de "atención" — alias por compatibilidad
+  warn: "#F0B90B",
+  warnBg: "rgba(240, 185, 11, 0.12)",
+  warnBorder: "rgba(240, 185, 11, 0.32)",
+  // verde / rojo — EXCLUSIVOS para ganancia / pérdida en cifras financieras
+  money: "#0ECB81",
+  moneyBg: "rgba(14, 203, 129, 0.12)",
+  moneyBorder: "rgba(14, 203, 129, 0.30)",
+  bad: "#F6465D",
+  badBg: "rgba(246, 70, 93, 0.12)",
+  badBorder: "rgba(246, 70, 93, 0.30)",
+  // paleta ampliada — reservada EXCLUSIVAMENTE para los íconos del carrusel
+  // de bienvenida (tutorial). No se usa en ninguna pantalla principal.
   tutorialViolet: "#8E7CFF",
   tutorialBlue: "#3DB6F2",
 };
 
+// Base tipográfica única — los números usan esta misma familia con
+// tabular-nums en vez de una fuente monoespaciada, como en el patrón
+// de referencia. FONT_MONO se conserva por compatibilidad (ya no se
+// usa para cifras) por si algún componente futuro necesita monoespaciado real.
 const FONT = "'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif";
 const FONT_MONO = FONT;
 const NUMS = { fontFamily: FONT, fontVariantNumeric: "tabular-nums" };
@@ -51,6 +58,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
 async function obtenerTasaCambioAutomatica() {
+  // API pública, gratis, sin llave — funciona igual aquí que en un despliegue propio (Vercel, etc.)
   const response = await fetch("https://open.er-api.com/v6/latest/USD");
   if (!response.ok) throw new Error("No se pudo consultar la tasa");
   const data = await response.json();
@@ -76,32 +84,6 @@ const CATS_PERSONAL = [
   { name: "Otro", tipo: "Necesidad" },
 ];
 const CATS_NEGOCIO = ["Ads/Pauta", "Herramientas/Software", "Contenido (edición, freelance)", "Hosting/Dominios", "Comisiones Hotmart/ManyChat", "Otro gasto operativo"];
-
-/* Íconos por categoría — solo uso visual, no altera CATS_PERSONAL/CATS_NEGOCIO */
-const CATEGORY_ICONS = {
-  "Arriendo/Vivienda": "home",
-  "Servicios (luz/agua/internet)": "bolt",
-  "Mercado": "cart",
-  "Transporte": "car",
-  "Salud": "heart",
-  "Deudas": "creditcard",
-  "Restaurantes": "utensils",
-  "Entretenimiento": "film",
-  "Compras personales": "bag",
-  "Suscripciones": "refresh",
-  "Viajes": "plane",
-  "Ahorro": "target",
-  "Inversión": "trend",
-  "Otro": "dots",
-};
-const NEGOCIO_ICONS = {
-  "Ads/Pauta": "megaphone",
-  "Herramientas/Software": "settings",
-  "Contenido (edición, freelance)": "pencil",
-  "Hosting/Dominios": "server",
-  "Comisiones Hotmart/ManyChat": "percent",
-  "Otro gasto operativo": "dots",
-};
 
 const DEFAULT_STATE = {
   config: { tasaRef: 4000, sueldo: 0, pctNecesidad: 0.5, pctGusto: 0.3, pctAhorro: 0.2, mesesFondo: 6, umbralHormiga: 30000, tasaAutoFecha: null },
@@ -147,22 +129,6 @@ const Icon = ({ name, size = 18, color = "currentColor", strokeWidth = 1.8 }) =>
     eyeOff: <><path d="M3 3l18 18" /><path d="M10.6 5.2A10.6 10.6 0 0112 5c6.5 0 10 7 10 7a17.4 17.4 0 01-3.4 4.4M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7c1.5 0 2.8-.3 4-.8" /><path d="M9.9 9.9a3 3 0 004.2 4.2" /></>,
     menu: <><path d="M4 7h16M4 12h16M4 17h16" /></>,
     portfolio: <><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" /></>,
-    logout: <><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" /></>,
-    home: <><path d="M4 11l8-7 8 7" /><path d="M6 10v9a1 1 0 001 1h3v-6h4v6h3a1 1 0 001-1v-9" /></>,
-    bolt: <path d="M13 2L5 14h6l-1 8 9-12h-6l1-8z" />,
-    cart: <><circle cx="9" cy="20" r="1.3" fill={color} /><circle cx="18" cy="20" r="1.3" fill={color} /><path d="M2.5 3h2l2.3 12.2a2 2 0 002 1.8h8.4a2 2 0 002-1.7L20.5 7.5H6" /></>,
-    car: <><path d="M4.5 16V11.5l2-5h11l2.5 5V16" /><path d="M3.5 16h17" /><circle cx="7.5" cy="17.6" r="1.5" /><circle cx="16.5" cy="17.6" r="1.5" /></>,
-    heart: <path d="M12 20s-7.2-4.4-9.6-9C1 8 2 4.7 5.4 4.1c2-.3 4 .8 6.6 3.4 2.6-2.6 4.6-3.7 6.6-3.4C21.9 4.7 23 8 21.6 11 19.2 15.6 12 20 12 20z" />,
-    creditcard: <><rect x="2.5" y="5.5" width="19" height="13" rx="2" /><path d="M2.5 10.2h19" /></>,
-    utensils: <><path d="M7 2v6.4a2 2 0 004 0V2M9 8.4V22" /><path d="M16.5 2c-1.4 0-2.3 2-2.3 4.4s.9 4.4 2.3 4.4 2.3-2 2.3-4.4S17.9 2 16.5 2zM16.5 10.8V22" /></>,
-    film: <><rect x="3" y="4.5" width="18" height="15" rx="2" /><path d="M3 9.2h18M3 15h18M8.2 4.5v15M15.8 4.5v15" /></>,
-    bag: <><path d="M6.5 8h11l1 12.2a2 2 0 01-2 1.8H7.5a2 2 0 01-2-1.8L6.5 8z" /><path d="M9 8V6a3 3 0 016 0v2" /></>,
-    plane: <path d="M21.5 2.5L11 13M21.5 2.5L14.7 21l-3.4-7.7L3.5 10l18-7.5z" />,
-    dots: <><circle cx="5" cy="12" r="1.6" fill={color} /><circle cx="12" cy="12" r="1.6" fill={color} /><circle cx="19" cy="12" r="1.6" fill={color} /></>,
-    pencil: <><path d="M3.5 20.5l3.6-1 10.6-10.6-2.6-2.6L4.5 16.9l-1 3.6z" /><path d="M14.7 4.8l2.1-2.1a1.8 1.8 0 012.6 0l.9.9a1.8 1.8 0 010 2.6l-2.1 2.1" /></>,
-    server: <><rect x="3" y="4" width="18" height="6.5" rx="1.6" /><rect x="3" y="13.5" width="18" height="6.5" rx="1.6" /><circle cx="7" cy="7.2" r="0.6" fill={color} /><circle cx="7" cy="16.8" r="0.6" fill={color} /></>,
-    percent: <><circle cx="7" cy="7" r="2.3" /><circle cx="17" cy="17" r="2.3" /><path d="M19 5L5 19" /></>,
-    megaphone: <><path d="M3 9.5v5a1 1 0 001 1h1.8l6.7 3.8V4.7L5.8 8.5H4a1 1 0 00-1 1z" /><path d="M16.5 8a4 4 0 010 8" /></>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
@@ -172,81 +138,86 @@ const Icon = ({ name, size = 18, color = "currentColor", strokeWidth = 1.8 }) =>
 };
 
 /* ============================================================
-   STORAGE — Supabase (base de datos en la nube)
+   STORAGE HOOK — localStorage (deploy standalone en Vercel)
    ------------------------------------------------------------
-   Cada usuario logueado tiene una fila "privada" (solo él la ve,
-   sus datos Personal/Presupuesto/Metas/Historial/Config) y hay
-   UNA fila "compartida" que ven y editan los dos hermanos por
-   igual (los datos de Petnova). Row Level Security en la base de
-   datos es quien de verdad impide que nadie más entre — el login
-   es la puerta, RLS es la cerradura.
+   La versión de Claude usaba window.storage (solo existe dentro
+   de un artifact de Claude.ai). Fuera de ahí no existe, así que
+   aquí usamos localStorage del navegador: gratis, sin backend,
+   los datos quedan guardados en ESE dispositivo/navegador.
+   Si algún día necesitas que dos personas (ej. tu hermano) editen
+   el mismo bloque "compartido" desde dispositivos distintos,
+   localStorage no sirve para eso — ahí sí necesitarías algo como
+   Supabase. Mientras sea solo tuyo, esto es lo más simple posible.
    ============================================================ */
+const PRIVATE_KEY = "finanzas:personal:v1";
+const SHARED_KEY = "finanzas:petnova:v1";
 const PRIVATE_FIELDS = ["config", "ingresosPersonalOtros", "gastosPersonal", "presupuestos", "metas", "fondoAhorrado", "historial", "tutorialVisto"];
 const SHARED_FIELDS = ["ingresosPetnova", "gastosPetnova"];
-const SHARED_ROW_ID = "shared";
 
-function usePersistentState(user) {
+function safeGetJSON(key) {
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function usePersistentState() {
   const [state, setState] = useState(DEFAULT_STATE);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
-  const saveTimer = useRef(null);
-  const privateRowId = `private:${user.id}`;
+  const hasStorage = typeof window !== "undefined" && !!window.localStorage;
 
   useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      const { data, error } = await supabase
-        .from("app_state")
-        .select("id, payload")
-        .in("id", [privateRowId, SHARED_ROW_ID]);
-      if (cancelled) return;
-      let priv = {};
-      let shared = {};
-      if (!error && data) {
-        const privRow = data.find((r) => r.id === privateRowId);
-        const sharedRow = data.find((r) => r.id === SHARED_ROW_ID);
-        if (privRow) priv = privRow.payload || {};
-        if (sharedRow) shared = sharedRow.payload || {};
-      }
-      setState({
-        ...DEFAULT_STATE,
-        ...priv,
-        ...shared,
-        config: { ...DEFAULT_STATE.config, ...(priv.config || {}) },
-      });
-      setLoaded(true);
+    if (hasStorage) {
+      try {
+        let mergedPriv = safeGetJSON(PRIVATE_KEY);
+        let mergedShared = safeGetJSON(SHARED_KEY);
+
+        // migración: si aún no hay nada bajo las llaves nuevas, busca los datos
+        // guardados con el esquema anterior (una sola llave) y los reparte.
+        if (Object.keys(mergedPriv).length === 0 && Object.keys(mergedShared).length === 0) {
+          const legacy = safeGetJSON("finanzas:data");
+          if (Object.keys(legacy).length > 0) {
+            mergedPriv = {};
+            PRIVATE_FIELDS.forEach((k) => { if (legacy[k] !== undefined) mergedPriv[k] = legacy[k]; });
+            mergedShared = {};
+            SHARED_FIELDS.forEach((k) => { if (legacy[k] !== undefined) mergedShared[k] = legacy[k]; });
+            window.localStorage.setItem(PRIVATE_KEY, JSON.stringify(mergedPriv));
+            window.localStorage.setItem(SHARED_KEY, JSON.stringify(mergedShared));
+          }
+        }
+
+        setState({
+          ...DEFAULT_STATE,
+          ...mergedPriv,
+          ...mergedShared,
+          config: { ...DEFAULT_STATE.config, ...(mergedPriv.config || {}) },
+        });
+      } catch (e) {}
     }
-    load();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user.id]);
+    setLoaded(true);
+  }, []);
 
   const save = useCallback(
     (next) => {
       setState(next);
+      if (!hasStorage) return;
       setSaving(true);
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      // debounce: espera 600ms de inactividad antes de escribir en la
-      // base de datos, así no se dispara una escritura por cada tecla.
-      saveTimer.current = setTimeout(async () => {
+      try {
         const priv = {};
         PRIVATE_FIELDS.forEach((k) => (priv[k] = next[k]));
         const shared = {};
         SHARED_FIELDS.forEach((k) => (shared[k] = next[k]));
-        try {
-          await supabase.from("app_state").upsert([
-            { id: privateRowId, owner_id: user.id, payload: priv, updated_at: new Date().toISOString() },
-            { id: SHARED_ROW_ID, owner_id: null, payload: shared, updated_at: new Date().toISOString() },
-          ]);
-        } catch (e) {
-          console.error("Error guardando", e);
-        }
-        setSaving(false);
-      }, 600);
+        window.localStorage.setItem(PRIVATE_KEY, JSON.stringify(priv));
+        window.localStorage.setItem(SHARED_KEY, JSON.stringify(shared));
+      } catch (e) {
+        console.error("Error guardando", e);
+      }
+      setSaving(false);
     },
-    [privateRowId, user.id]
+    [hasStorage]
   );
 
   return { state, save, loaded, saving };
@@ -255,18 +226,19 @@ function usePersistentState(user) {
 /* ============================================================
    PRIMITIVOS VISUALES
    ============================================================ */
-function Card({ children, style, padding = "20px" }) {
+
+// Tarjeta contenedora — SOLO se usa para agrupar una lista completa,
+// nunca para envolver un dato suelto. Fondo sólido, borde casi
+// invisible, radio moderado, sin sombras ni vidrio.
+function Card({ children, style, padding = "18px 20px" }) {
   return (
     <div
-      className="fin-card"
       style={{
         background: C.card,
         border: `1px solid ${C.border}`,
-        borderRadius: 20,
+        borderRadius: 12,
         padding,
         boxSizing: "border-box",
-        boxShadow: "0 1px 2px rgba(0,0,0,0.24), 0 8px 24px -12px rgba(0,0,0,0.5)",
-        transition: "border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease",
         ...style,
       }}
     >
@@ -275,6 +247,8 @@ function Card({ children, style, padding = "20px" }) {
   );
 }
 
+// Etiqueta pequeña y tenue que agrupa una lista o sección —
+// texto, no caja: así se organiza contenido sin apilar tarjetas.
 function GroupLabel({ children, style }) {
   return (
     <div style={{ fontSize: 11.5, color: C.textFaint, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10, ...style }}>
@@ -283,57 +257,28 @@ function GroupLabel({ children, style }) {
   );
 }
 
-function Hero({ label, value, valueColor, badge, sub, icon = "dashboard" }) {
+// El dato protagonista de cada pantalla — flota directo sobre el
+// fondo, sin caja ni borde. Todo lo demás es secundario y va debajo.
+// Incluye el ícono de "ojo" para ocultar/mostrar la cifra, como en
+// el patrón de referencia — cada Hero recuerda su propio estado.
+function Hero({ label, value, valueColor, badge, sub }) {
   const [visible, setVisible] = useState(true);
   return (
-    <div style={{ marginBottom: 30, position: "relative", textAlign: "center" }}>
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          top: -30,
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: 220,
-          height: 190,
-          background: `radial-gradient(closest-side, ${C.brandBg}, transparent)`,
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      />
-      <div style={{ position: "relative", display: "flex", justifyContent: "center", marginBottom: 14 }}>
-        <div
-          style={{
-            width: 46,
-            height: 46,
-            borderRadius: "50%",
-            background: C.cardAlt,
-            border: `1px solid ${C.brandBorder}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: C.brand,
-            boxShadow: `0 0 0 6px ${C.brandBg}`,
-          }}
-        >
-          <Icon name={icon} size={19} strokeWidth={1.8} />
-        </div>
-      </div>
-      <div style={{ position: "relative", fontSize: 11.5, color: C.textFaint, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 }}>
+    <div style={{ marginBottom: 26 }}>
+      <div style={{ fontSize: 11.5, color: C.textFaint, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 }}>
         {label}
       </div>
-      <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <div
           style={{
-            fontSize: 44,
-            fontWeight: 800,
-            letterSpacing: -1.4,
+            fontSize: 38,
+            fontWeight: 700,
+            letterSpacing: -1,
             lineHeight: 1,
             color: valueColor || C.text,
             fontFamily: FONT,
             fontVariantNumeric: "tabular-nums",
             wordBreak: "break-word",
-            transition: "opacity 0.15s ease",
           }}
         >
           {visible ? value : "••••••"}
@@ -341,27 +286,28 @@ function Hero({ label, value, valueColor, badge, sub, icon = "dashboard" }) {
         <button
           onClick={() => setVisible((v) => !v)}
           title={visible ? "Ocultar valor" : "Mostrar valor"}
-          className="fin-tap"
-          style={{ background: "transparent", border: "none", color: C.textFaint, cursor: "pointer", display: "flex", alignItems: "center", padding: 6, flexShrink: 0, borderRadius: 8, transition: "color 0.15s ease" }}
+          style={{ background: "transparent", border: "none", color: C.textFaint, cursor: "pointer", display: "flex", alignItems: "center", padding: 4, flexShrink: 0 }}
         >
           <Icon name={visible ? "eye" : "eyeOff"} size={18} strokeWidth={1.8} />
         </button>
         {badge}
       </div>
-      {sub && <div style={{ position: "relative", fontSize: 12.5, color: C.textMuted, marginTop: 10 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 12.5, color: C.textMuted, marginTop: 8 }}>{sub}</div>}
     </div>
   );
 }
 
+// Fila de accesos rápidos tipo pill — ícono + texto en línea, full
+// rounded. Un solo botón lleva el acento de marca (acción principal);
+// el resto queda en pill neutra de contorno, como en el patrón de referencia.
 function QuickActions({ items }) {
   return (
     <div
       style={{
         display: "flex",
-        gap: 6,
-        marginBottom: 28,
+        gap: 8,
+        marginBottom: 26,
         overflowX: "auto",
-        justifyContent: "center",
         scrollbarWidth: "none",
         WebkitOverflowScrolling: "touch",
       }}
@@ -370,40 +316,23 @@ function QuickActions({ items }) {
         <button
           key={it.label}
           onClick={it.onClick}
-          className="fin-tap"
           style={{
             flexShrink: 0,
-            width: 68,
-            display: "flex",
-            flexDirection: "column",
+            display: "inline-flex",
             alignItems: "center",
-            gap: 8,
-            padding: "2px 2px 0",
-            background: "transparent",
-            border: "none",
+            gap: 7,
+            padding: "9px 16px 9px 12px",
+            borderRadius: 999,
             cursor: "pointer",
+            background: it.primary ? C.brand : C.cardAlt,
+            border: it.primary ? "1px solid transparent" : `1px solid ${C.border}`,
+            color: it.primary ? C.brandOn : C.text,
             fontFamily: FONT,
-            transition: "transform 0.12s ease",
+            whiteSpace: "nowrap",
           }}
         >
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: it.primary ? C.brand : C.cardAlt,
-              border: it.primary ? "1px solid transparent" : `1px solid ${C.border}`,
-              color: it.primary ? C.brandOn : C.text,
-              boxShadow: it.primary ? `0 6px 16px -6px ${C.brandBorder}` : "none",
-              transition: "background 0.15s ease, box-shadow 0.15s ease",
-            }}
-          >
-            <Icon name={it.icon} size={19} strokeWidth={2} />
-          </div>
-          <span style={{ fontSize: 10.5, fontWeight: 700, color: C.textMuted, textAlign: "center", lineHeight: 1.2 }}>{it.label}</span>
+          <Icon name={it.icon} size={15} strokeWidth={2.2} />
+          <span style={{ fontSize: 12.5, fontWeight: 700 }}>{it.label}</span>
         </button>
       ))}
     </div>
@@ -420,19 +349,19 @@ function Field({ value, onChange, type = "text", placeholder, style, ...props })
       onBlur={() => setFocus(false)}
       type={type}
       placeholder={placeholder}
-      className="fin-field"
       style={{
         background: C.cardAlt,
-        border: `1.5px solid ${focus ? C.borderStrong : "transparent"}`,
-        borderRadius: 12,
-        padding: "12px 16px",
+        border: `1.5px solid ${focus ? C.brand : C.border}`,
+        borderRadius: 10,
+        padding: "10px 12px",
         color: C.text,
-        fontSize: 14,
+        fontSize: 13.5,
         outline: "none",
         width: "100%",
         boxSizing: "border-box",
         fontFamily: FONT,
-        transition: "border-color 0.15s ease",
+        transition: "border-color 0.12s ease, box-shadow 0.12s ease",
+        boxShadow: focus ? `0 0 0 3px ${C.brandBg}` : "none",
         ...style,
       }}
       {...props}
@@ -450,17 +379,17 @@ function Dropdown({ value, onChange, options, style }) {
       onBlur={() => setFocus(false)}
       style={{
         background: C.cardAlt,
-        border: `1.5px solid ${focus ? C.borderStrong : "transparent"}`,
-        borderRadius: 12,
-        padding: "12px 16px",
-        color: value ? C.text : C.textMuted,
-        fontSize: 14,
+        border: `1.5px solid ${focus ? C.brand : C.border}`,
+        borderRadius: 10,
+        padding: "10px 12px",
+        color: value ? C.text : C.textFaint,
+        fontSize: 13.5,
         outline: "none",
         width: "100%",
         boxSizing: "border-box",
         fontFamily: FONT,
         cursor: "pointer",
-        transition: "border-color 0.15s ease",
+        boxShadow: focus ? `0 0 0 3px ${C.brandBg}` : "none",
         ...style,
       }}
     >
@@ -476,67 +405,51 @@ function Dropdown({ value, onChange, options, style }) {
   );
 }
 
-function Btn({ children, onClick, variant = "primary", style, disabled, icon, type }) {
+function Btn({ children, onClick, variant = "primary", style, disabled, icon }) {
   const [hover, setHover] = useState(false);
   const variants = {
     primary: {
-      background: C.brandGradient,
+      background: hover ? "#F8D33A" : C.brand,
       color: C.brandOn,
       border: "1px solid transparent",
-      opacity: hover ? 0.92 : 1,
-    },
-    secondary: {
-      background: hover ? C.brandBg : "transparent",
-      color: C.brand,
-      border: `1.5px solid ${C.brand}`,
     },
     ghost: {
-      background: hover ? C.brandBg : "transparent",
-      color: C.brand,
-      border: `1.5px solid ${C.brand}`,
-    },
-    text: {
-      background: "transparent",
-      color: C.brand,
-      border: "1px solid transparent",
-      padding: "4px 2px",
+      background: hover ? C.cardHover : "transparent",
+      color: C.text,
+      border: `1px solid ${C.border}`,
     },
     danger: {
       background: hover ? C.badBg : "transparent",
       color: C.bad,
-      border: `1.5px solid ${C.badBorder}`,
+      border: `1px solid ${C.badBorder}`,
     },
   };
-  const isText = variant === "text";
   return (
     <button
-      type={type}
       onClick={onClick}
       disabled={disabled}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      className="fin-tap"
       style={{
-        padding: isText ? "4px 2px" : variant === "primary" ? "12px 22px" : "10px 18px",
-        borderRadius: 999,
-        fontSize: isText ? 13 : 13,
+        padding: variant === "primary" ? "9px 18px" : "9px 15px",
+        // acento único → pill redondeada full; el resto se queda en 10px (≤12px)
+        borderRadius: variant === "primary" ? 999 : 10,
+        fontSize: 12.5,
         fontWeight: 700,
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.5 : 1,
-        transition: "background 0.15s ease, border-color 0.15s ease, transform 0.12s ease, opacity 0.15s ease",
+        transition: "background 0.12s ease, border-color 0.12s ease",
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
         fontFamily: FONT,
         letterSpacing: 0.1,
-        boxShadow: variant === "primary" && !disabled ? `0 4px 14px -4px ${C.brandBorder}` : "none",
         ...variants[variant],
         ...style,
       }}
     >
       {icon && <Icon name={icon} size={13} strokeWidth={2.4} />}
       {children}
-      {isText && <Icon name="chevronRight" size={13} strokeWidth={2.4} />}
     </button>
   );
 }
@@ -580,8 +493,8 @@ function Chip({ estado }) {
         background: s.bg,
         color: s.txt,
         border: `1px solid ${s.border}`,
-        padding: "4px 10px 4px 8px",
-        borderRadius: 999,
+        padding: "4px 10px 4px 7px",
+        borderRadius: 6,
         fontSize: 10.5,
         fontWeight: 700,
         display: "inline-flex",
@@ -596,6 +509,8 @@ function Chip({ estado }) {
   );
 }
 
+// Insignia de privacidad — texto en escala de grises, sin fondo de
+// color: es información funcional, no una decoración de marca.
 function PrivacyBadge({ shared }) {
   return (
     <span
@@ -616,6 +531,8 @@ function PrivacyBadge({ shared }) {
   );
 }
 
+// Encabezado mínimo de cada pestaña — solo el nombre de la sección,
+// el número protagonista (Hero) es quien hace el trabajo visual.
 function SectionHead({ children, badge }) {
   return (
     <div style={{ marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
@@ -627,24 +544,11 @@ function SectionHead({ children, badge }) {
 
 function EmptyState({ text, icon = "trend" }) {
   return (
-    <div style={{ padding: "36px 10px", textAlign: "center", color: C.textFaint }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          width: 48,
-          height: 48,
-          borderRadius: "50%",
-          background: C.cardAlt,
-          border: `1px solid ${C.border}`,
-          margin: "0 auto 14px",
-          color: C.textMuted,
-        }}
-      >
-        <Icon name={icon} size={20} strokeWidth={1.6} />
+    <div style={{ padding: "30px 10px", textAlign: "center", color: C.textFaint }}>
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 10, opacity: 0.4 }}>
+        <Icon name={icon} size={26} strokeWidth={1.4} />
       </div>
-      <div style={{ fontSize: 12.5, maxWidth: 220, margin: "0 auto" }}>{text}</div>
+      <div style={{ fontSize: 12.5 }}>{text}</div>
     </div>
   );
 }
@@ -657,19 +561,18 @@ function IconBtn({ onClick, name = "trash", color = C.bad }) {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       title="Eliminar"
-      className="fin-tap"
       style={{
         background: hover ? `${color}18` : "transparent",
         border: "1px solid transparent",
         color,
         cursor: "pointer",
-        borderRadius: "50%",
-        width: 30,
-        height: 30,
+        borderRadius: 8,
+        width: 28,
+        height: 28,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        transition: "background 0.15s ease",
+        transition: "background 0.12s ease",
         flexShrink: 0,
       }}
     >
@@ -678,6 +581,8 @@ function IconBtn({ onClick, name = "trash", color = C.bad }) {
   );
 }
 
+// Fila simple label / valor — el patrón base de casi toda la app.
+// Sin caja, sin fondo: solo una línea divisoria de 1px al pie.
 function Row({ label, value, bold, color, last }) {
   return (
     <div
@@ -685,18 +590,18 @@ function Row({ label, value, bold, color, last }) {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        padding: "12px 0",
+        padding: "11px 0",
         borderBottom: last ? "none" : `1px solid ${C.divider}`,
       }}
     >
-      <span style={{ color: bold ? C.text : C.textMuted, fontWeight: bold ? 700 : 400, fontSize: 14 }}>{label}</span>
+      <span style={{ color: bold ? C.text : C.textMuted, fontWeight: bold ? 700 : 400, fontSize: bold ? 14 : 13.5 }}>{label}</span>
       <span
         style={{
           color: color || C.text,
           fontFamily: FONT,
           fontVariantNumeric: "tabular-nums",
           fontWeight: 700,
-          fontSize: bold ? 15 : 14,
+          fontSize: bold ? 14.5 : 13.5,
         }}
       >
         {value}
@@ -705,25 +610,33 @@ function Row({ label, value, bold, color, last }) {
   );
 }
 
+// Estilos compactos para los campos que viven DENTRO de una TxRow —
+// mismo componente Field/Dropdown de siempre, solo más livianos, para
+// que la fila se lea como texto y no como un formulario pesado.
 const txPrimaryStyle = { background: "transparent", padding: "2px 4px", fontSize: 14, fontWeight: 600, borderRadius: 6 };
 const txMetaStyle = { background: "transparent", padding: "2px 4px", fontSize: 11, borderRadius: 6, color: C.textMuted };
 const txAmountStyle = { background: "transparent", padding: "2px 4px", fontSize: 14.5, fontWeight: 700, borderRadius: 6, textAlign: "right", fontVariantNumeric: "tabular-nums" };
 
+// Fila de lista tipo Binance — el patrón más importante del sistema:
+// ícono circular a la izquierda, nombre arriba / subtítulo abajo,
+// y a la derecha el monto arriba / meta abajo, todo alineado a la
+// derecha con tabular-nums. Un solo hairline entre filas, sin card
+// individual por ítem. Sigue siendo un formulario editable por dentro.
 function TxRow({ icon, iconColor = C.textMuted, primary, meta, amount, amountColor, amountSub, onDelete, last }) {
   return (
     <div
       style={{
         display: "flex",
         alignItems: "flex-start",
-        gap: 13,
-        padding: "14px 0",
+        gap: 12,
+        padding: "12px 0",
         borderBottom: last ? "none" : `1px solid ${C.divider}`,
       }}
     >
       <div
         style={{
-          width: 40,
-          height: 40,
+          width: 34,
+          height: 34,
           borderRadius: "50%",
           background: `${iconColor}18`,
           color: iconColor,
@@ -734,7 +647,7 @@ function TxRow({ icon, iconColor = C.textMuted, primary, meta, amount, amountCol
           marginTop: 1,
         }}
       >
-        <Icon name={icon} size={17} strokeWidth={2} />
+        <Icon name={icon} size={15} strokeWidth={2} />
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -744,87 +657,13 @@ function TxRow({ icon, iconColor = C.textMuted, primary, meta, amount, amountCol
 
       <div style={{ flexShrink: 0, display: "flex", alignItems: "flex-start", gap: 4 }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", minWidth: 108 }}>
-          <div style={{ color: amountColor || C.text, fontFamily: FONT, fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 14 }}>
+          <div style={{ color: amountColor || C.text, fontFamily: FONT, fontVariantNumeric: "tabular-nums", fontWeight: 700, fontSize: 13.5 }}>
             {amount}
           </div>
           {amountSub && <div style={{ fontSize: 10.5, color: C.textFaint, marginTop: 2, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>{amountSub}</div>}
         </div>
         {onDelete && <IconBtn onClick={onDelete} />}
       </div>
-    </div>
-  );
-}
-
-/* ============================================================
-   LOGIN — pantalla de acceso con Supabase Auth
-   ============================================================ */
-function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    if (error) setError("Correo o contraseña incorrectos.");
-    setLoading(false);
-  };
-
-  return (
-    <div
-      style={{
-        background: C.bg,
-        minHeight: 500,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: FONT,
-        borderRadius: 12,
-        border: `1px solid ${C.border}`,
-        padding: 24,
-        boxSizing: "border-box",
-      }}
-    >
-      <form onSubmit={handleLogin} style={{ width: "100%", maxWidth: 320 }}>
-        <div style={{ textAlign: "center", marginBottom: 26 }}>
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: "50%",
-              background: C.brand,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 24,
-              fontWeight: 900,
-              color: C.brandOn,
-              margin: "0 auto 16px",
-              boxShadow: `0 8px 24px -8px ${C.brandBorder}`,
-            }}
-          >
-            $
-          </div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: C.text, letterSpacing: -0.5 }}>Sistema Financiero</div>
-          <div style={{ fontSize: 12, color: C.textFaint, marginTop: 5 }}>Acceso privado — solo tú y tu hermano</div>
-        </div>
-
-        <div style={{ marginBottom: 14 }}>
-          <Field type="email" placeholder="Correo" value={email} onChange={setEmail} autoComplete="username" required />
-        </div>
-        <div style={{ marginBottom: 18 }}>
-          <Field type="password" placeholder="Contraseña" value={password} onChange={setPassword} autoComplete="current-password" required />
-        </div>
-
-        {error && <div style={{ color: C.bad, fontSize: 12.5, marginBottom: 14, textAlign: "center" }}>{error}</div>}
-
-        <Btn type="submit" variant="primary" disabled={loading} style={{ width: "100%", justifyContent: "center" }}>
-          {loading ? "Entrando..." : "Entrar"}
-        </Btn>
-      </form>
     </div>
   );
 }
@@ -922,9 +761,7 @@ function Tutorial({ onFinish }) {
         }}
       >
         <button
-          onClick={() => {
-            onFinish();
-          }}
+          onClick={() => { /* saltar tutorial */ onFinish(); }}
           style={{
             position: "absolute",
             top: 18,
@@ -1012,16 +849,12 @@ const TICKER_ITEMS = [
 ];
 
 function SplashIntro({ onDone }) {
-  const [phase, setPhase] = useState(0);
+  const [phase, setPhase] = useState(0); // 0 entrando, 1 mostrando, 2 saliendo
   useEffect(() => {
     const t1 = setTimeout(() => setPhase(1), 60);
     const t2 = setTimeout(() => setPhase(2), 1500);
     const t3 = setTimeout(() => onDone(), 1900);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-    };
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1052,8 +885,10 @@ function SplashIntro({ onDone }) {
         @keyframes splashBar { 0% { width: 0%; } 100% { width: 100%; } }
       `}</style>
 
-      <div aria-hidden style={{ position: "absolute", top: "12%", left: "8%", width: 460, height: 460, borderRadius: "50%", background: "radial-gradient(circle, rgba(151,220,34,0.07), transparent 70%)", filter: "blur(50px)", animation: "splashDrift1 10s ease-in-out infinite" }} />
+      {/* único halo de fondo, en el acento de marca */}
+      <div aria-hidden style={{ position: "absolute", top: "12%", left: "8%", width: 460, height: 460, borderRadius: "50%", background: "radial-gradient(circle, rgba(240,185,11,0.07), transparent 70%)", filter: "blur(50px)", animation: "splashDrift1 10s ease-in-out infinite" }} />
 
+      {/* anillos expandiéndose desde el logo */}
       <div style={{ position: "relative", width: 96, height: 96, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div aria-hidden style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `1.5px solid ${C.brand}55`, animation: "splashRing 1.8s ease-out infinite" }} />
         <div aria-hidden style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `1.5px solid ${C.brand}55`, animation: "splashRing 1.8s ease-out 0.6s infinite" }} />
@@ -1061,7 +896,7 @@ function SplashIntro({ onDone }) {
           style={{
             width: 70,
             height: 70,
-            borderRadius: "50%",
+            borderRadius: 12,
             background: C.brand,
             display: "flex",
             alignItems: "center",
@@ -1107,6 +942,7 @@ function SplashIntro({ onDone }) {
         Petnova · Personal
       </div>
 
+      {/* ticker inferior tipo Binance */}
       <div
         style={{
           position: "absolute",
@@ -1129,6 +965,7 @@ function SplashIntro({ onDone }) {
         </div>
       </div>
 
+      {/* barra de progreso */}
       <div style={{ position: "absolute", bottom: 40, width: 160, height: 3, borderRadius: 4, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
         <div style={{ height: "100%", background: C.brand, borderRadius: 4, animation: "splashBar 1.5s cubic-bezier(0.4,0,0.2,1) both" }} />
       </div>
@@ -1137,38 +974,10 @@ function SplashIntro({ onDone }) {
 }
 
 /* ============================================================
-   AUTH GATE — decide si muestra Login o la app
+   APP
    ============================================================ */
 export default function App() {
-  const [session, setSession] = useState(undefined); // undefined = cargando, null = sin sesión
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-    });
-    return () => listener.subscription.unsubscribe();
-  }, []);
-
-  if (session === undefined) {
-    return (
-      <div style={{ background: C.bg, minHeight: 400, display: "flex", alignItems: "center", justifyContent: "center", color: C.textMuted, fontFamily: FONT, borderRadius: 12, border: `1px solid ${C.border}` }}>
-        <div style={{ width: 26, height: 26, border: `2.5px solid ${C.border}`, borderTopColor: C.brand, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    );
-  }
-
-  if (!session) return <Login />;
-
-  return <AppInner user={session.user} />;
-}
-
-/* ============================================================
-   APP (contenido real, ya logueado)
-   ============================================================ */
-function AppInner({ user }) {
-  const { state, save, loaded, saving } = usePersistentState(user);
+  const { state, save, loaded, saving } = usePersistentState();
   const [tab, setTab] = useState("dashboard");
   const [showTutorial, setShowTutorial] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
@@ -1177,13 +986,13 @@ function AppInner({ user }) {
   const dragState = useRef({ startX: 0, startY: 0, dragging: false, lockedAxis: null });
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const tabBtnRefs = useRef({});
   const mountTimeRef = useRef(Date.now());
 
   const update = (patch) => save({ ...state, ...patch });
 
   useEffect(() => {
+    // seguro: el splash nunca se queda pegado más de 4s aunque algo falle
     const hardCap = setTimeout(() => setShowSplash(false), 4000);
     return () => clearTimeout(hardCap);
   }, []);
@@ -1337,11 +1146,11 @@ function AppInner({ user }) {
     else if (dx >= threshold) goToIndex(activeIndex - 1);
   };
 
-  const BOTTOM_NAV_IDS = ["dashboard", "petnova", "personal", "presupuesto"];
+  // Accesos principales de la barra inferior (mobile) — 5 íconos,
+  // como en el patrón de referencia. Historial y Config quedan
+  // accesibles desde las pestañas superiores con scroll horizontal.
+  const BOTTOM_NAV_IDS = ["dashboard", "petnova", "personal", "presupuesto", "metas"];
   const bottomNavTabs = TABS.filter((t) => BOTTOM_NAV_IDS.includes(t.id));
-  const MENU_TAB_IDS = ["metas", "historial", "config"];
-  const menuTabs = TABS.filter((t) => MENU_TAB_IDS.includes(t.id));
-  const menuActive = MENU_TAB_IDS.includes(tab);
 
   return (
     <div
@@ -1356,36 +1165,30 @@ function AppInner({ user }) {
         position: "relative",
       }}
     >
+      {/* Reglas responsive: contenedor centrado en desktop (máx. 1100-1200px),
+          layout de 2 columnas para pantallas anchas, y barra inferior fija
+          que solo aparece en mobile. Un solo componente, sin duplicar lógica. */}
       <style>{`
         .fin-container { max-width: 1160px; margin: 0 auto; width: 100%; box-sizing: border-box; }
         .fin-bottom-nav { display: none; }
-        .fin-2col { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; }
-        .fin-card:hover { border-color: ${C.borderStrong}; }
-        .fin-tap { -webkit-tap-highlight-color: transparent; }
-        .fin-tap:active { transform: scale(0.96); }
-        .fin-navbtn:active { transform: scale(0.92); }
-        .fin-sheetitem:active { background: ${C.cardHover}; }
-        .fin-field[required]:not(:placeholder-shown):invalid { color: ${C.bad}; }
-        .fin-field[required]:not(:placeholder-shown):valid:not(:focus) { color: ${C.money}; }
+        .fin-2col { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: start; }
         @media (max-width: 899px) {
           .fin-bottom-nav { display: flex; }
-          .fin-swipe-area { padding-bottom: 94px; }
-          .fin-toptabs { display: none; }
-          .fin-dots { display: none; }
+          .fin-swipe-area { padding-bottom: 76px; }
         }
         @media (min-width: 900px) {
-          .fin-2col { grid-template-columns: 336px 1fr; gap: 28px; }
+          .fin-2col { grid-template-columns: 336px 1fr; gap: 26px; }
         }
       `}</style>
 
-      <div className="fin-container" style={{ padding: "24px 20px 0 20px", position: "relative" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 24 }}>
+      <div className="fin-container" style={{ padding: "22px 24px 0 24px", position: "relative" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
             <div
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
+                width: 34,
+                height: 34,
+                borderRadius: 10,
                 background: C.brand,
                 display: "flex",
                 alignItems: "center",
@@ -1432,7 +1235,7 @@ function AppInner({ user }) {
               style={{
                 width: 28,
                 height: 28,
-                borderRadius: "50%",
+                borderRadius: 8,
                 background: "transparent",
                 border: `1px solid ${C.border}`,
                 color: C.textFaint,
@@ -1444,28 +1247,10 @@ function AppInner({ user }) {
             >
               <Icon name="help" size={14} strokeWidth={1.8} />
             </button>
-            <button
-              onClick={() => supabase.auth.signOut()}
-              title="Cerrar sesión"
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: "50%",
-                background: "transparent",
-                border: `1px solid ${C.border}`,
-                color: C.textFaint,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-              }}
-            >
-              <Icon name="logout" size={14} strokeWidth={1.8} />
-            </button>
           </div>
         </div>
 
-        <div className="fin-toptabs" style={{ position: "relative" }}>
+        <div style={{ position: "relative" }}>
           <div
             style={{
               display: "flex",
@@ -1509,6 +1294,7 @@ function AppInner({ user }) {
               );
             })}
           </div>
+          {/* difuminado para insinuar que hay más pestañas a la derecha */}
           <div
             aria-hidden
             style={{
@@ -1526,7 +1312,7 @@ function AppInner({ user }) {
 
       <div
         className="fin-container fin-swipe-area"
-        style={{ padding: "24px 0 10px 0", position: "relative", overflow: "hidden", touchAction: "pan-y" }}
+        style={{ padding: "22px 0 10px 0", position: "relative", overflow: "hidden", touchAction: "pan-y" }}
         onTouchStart={onPanelPointerDown}
         onTouchMove={onPanelPointerMove}
         onTouchEnd={onPanelPointerUp}
@@ -1539,31 +1325,32 @@ function AppInner({ user }) {
             transition: isDragging ? "none" : "transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)",
           }}
         >
-          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
+          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 24px 18px 24px", boxSizing: "border-box" }}>
             <Dashboard state={state} calc={calc} onNavigate={goToTab} />
           </div>
-          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
+          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 24px 18px 24px", boxSizing: "border-box" }}>
             <Petnova state={state} update={update} calc={calc} />
           </div>
-          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
+          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 24px 18px 24px", boxSizing: "border-box" }}>
             <Personal state={state} update={update} calc={calc} />
           </div>
-          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
+          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 24px 18px 24px", boxSizing: "border-box" }}>
             <Presupuesto state={state} update={update} />
           </div>
-          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
+          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 24px 18px 24px", boxSizing: "border-box" }}>
             <Metas state={state} update={update} calc={calc} />
           </div>
-          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
+          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 24px 18px 24px", boxSizing: "border-box" }}>
             <Historial state={state} update={update} calc={calc} />
           </div>
-          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
+          <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 24px 18px 24px", boxSizing: "border-box" }}>
             <ConfigTab state={state} update={update} tasaLoading={tasaLoading} tasaError={tasaError} onRefreshTasa={refrescarTasa} />
           </div>
         </div>
       </div>
 
-      <div className="fin-container fin-dots" style={{ display: "flex", justifyContent: "center", gap: 6, paddingBottom: 20 }}>
+      {/* puntos indicadores del carrusel */}
+      <div className="fin-container" style={{ display: "flex", justifyContent: "center", gap: 6, paddingBottom: 20 }}>
         {TABS.map((t, i) => (
           <div
             key={t.id}
@@ -1580,67 +1367,28 @@ function AppInner({ user }) {
         ))}
       </div>
 
+      {/* barra inferior fija — solo mobile, 5 accesos principales */}
       <div
         className="fin-bottom-nav"
         style={{
           position: "fixed",
-          left: 12,
-          right: 12,
-          bottom: "calc(10px + env(safe-area-inset-bottom, 0px))",
+          left: 0,
+          right: 0,
+          bottom: 0,
           zIndex: 60,
           background: C.card,
-          border: `1px solid ${C.border}`,
-          borderRadius: 22,
-          padding: "8px 6px",
+          borderTop: `1px solid ${C.border}`,
+          padding: "8px 4px calc(6px + env(safe-area-inset-bottom, 0px))",
           justifyContent: "space-around",
           alignItems: "center",
-          boxShadow: "0 12px 32px -8px rgba(0,0,0,0.55)",
-          WebkitMaskImage: "radial-gradient(circle 30px at 50% 0%, transparent 98%, black 100%)",
-          maskImage: "radial-gradient(circle 30px at 50% 0%, transparent 98%, black 100%)",
         }}
       >
-        {bottomNavTabs.map((t, i) => {
-          const active = tab === t.id && !menuOpen;
-          const isCenter = i === Math.floor(bottomNavTabs.length / 2);
-          if (isCenter) {
-            return (
-              <button
-                key={t.id}
-                onClick={() => {
-                  setMenuOpen(false);
-                  goToTab(t.id);
-                }}
-                className="fin-navbtn"
-                title={t.label}
-                style={{
-                  background: active ? C.brand : C.cardHover,
-                  border: active ? "1px solid transparent" : `1px solid ${C.border}`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 50,
-                  height: 50,
-                  borderRadius: "50%",
-                  color: active ? C.brandOn : C.text,
-                  cursor: "pointer",
-                  transform: "translateY(-14px)",
-                  boxShadow: active ? `0 8px 20px -6px ${C.brandBorder}` : "0 6px 16px -6px rgba(0,0,0,0.5)",
-                  transition: "background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease",
-                  flexShrink: 0,
-                }}
-              >
-                <Icon name={t.icon} size={21} strokeWidth={active ? 2.3 : 1.8} />
-              </button>
-            );
-          }
+        {bottomNavTabs.map((t) => {
+          const active = tab === t.id;
           return (
             <button
               key={t.id}
-              onClick={() => {
-                setMenuOpen(false);
-                goToTab(t.id);
-              }}
-              className="fin-navbtn"
+              onClick={() => goToTab(t.id)}
               style={{
                 background: "transparent",
                 border: "none",
@@ -1648,12 +1396,10 @@ function AppInner({ user }) {
                 flexDirection: "column",
                 alignItems: "center",
                 gap: 3,
-                padding: "6px 10px",
+                padding: "4px 8px",
                 color: active ? C.brand : C.textFaint,
                 cursor: "pointer",
                 fontFamily: FONT,
-                transition: "color 0.15s ease",
-                borderRadius: 12,
               }}
             >
               <Icon name={t.icon} size={19} strokeWidth={active ? 2.3 : 1.8} />
@@ -1661,109 +1407,7 @@ function AppInner({ user }) {
             </button>
           );
         })}
-        <button
-          onClick={() => setMenuOpen(true)}
-          className="fin-navbtn"
-          style={{
-            background: "transparent",
-            border: "none",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 3,
-            padding: "6px 10px",
-            color: menuOpen || menuActive ? C.brand : C.textFaint,
-            cursor: "pointer",
-            fontFamily: FONT,
-            transition: "color 0.15s ease",
-            borderRadius: 12,
-          }}
-        >
-          <Icon name="menu" size={19} strokeWidth={menuOpen || menuActive ? 2.3 : 1.8} />
-          <span style={{ fontSize: 9.5, fontWeight: 700 }}>Menú</span>
-        </button>
       </div>
-
-      {menuOpen && (
-        <div
-          onClick={() => setMenuOpen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 70,
-            background: "rgba(0,0,0,0.6)",
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "center",
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: "100%",
-              maxWidth: 480,
-              background: C.card,
-              border: `1px solid ${C.borderStrong}`,
-              borderBottom: "none",
-              borderRadius: "22px 22px 0 0",
-              padding: "10px 10px calc(20px + env(safe-area-inset-bottom, 0px))",
-              boxShadow: "0 -12px 32px -8px rgba(0,0,0,0.55)",
-            }}
-          >
-            <div style={{ width: 36, height: 4, borderRadius: 3, background: C.border, margin: "4px auto 14px" }} />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 10px 12px" }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: 0.8 }}>Más opciones</span>
-              <button onClick={() => setMenuOpen(false)} className="fin-tap" style={{ background: "transparent", border: "none", color: C.textFaint, padding: 4, display: "flex", cursor: "pointer" }}>
-                <Icon name="x" size={18} strokeWidth={2} />
-              </button>
-            </div>
-            {menuTabs.map((t) => {
-              const active = tab === t.id;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => {
-                    goToTab(t.id);
-                    setMenuOpen(false);
-                  }}
-                  className="fin-tap fin-sheetitem"
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 13,
-                    padding: "13px 10px",
-                    background: "transparent",
-                    border: "none",
-                    borderRadius: 14,
-                    cursor: "pointer",
-                    textAlign: "left",
-                    transition: "background 0.15s ease",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: "50%",
-                      background: active ? C.brandBg : C.cardAlt,
-                      color: active ? C.brand : C.textMuted,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Icon name={t.icon} size={17} strokeWidth={1.9} />
-                  </div>
-                  <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600, color: active ? C.brand : C.text }}>{t.label}</span>
-                  <Icon name="chevronRight" size={16} strokeWidth={2} color={C.textFaint} />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {showTutorial && (
         <Tutorial
@@ -1794,7 +1438,6 @@ function Dashboard({ state, calc, onNavigate }) {
         valueColor={ahorroColor}
         badge={calc.salud !== "info" && <Chip estado={calc.salud} />}
         sub={calc.saludMsg}
-        icon="trend"
       />
 
       <QuickActions
@@ -1807,12 +1450,11 @@ function Dashboard({ state, calc, onNavigate }) {
         ]}
       />
 
+      {/* Desktop: resumen a la izquierda, detalle de cada área a la derecha.
+          Mobile: se apila en una sola columna (fin-2col se encarga vía CSS). */}
       <div className="fin-2col">
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <GroupLabel>Distribución de gastos</GroupLabel>
-            <Btn variant="text" onClick={() => onNavigate("presupuesto")} style={{ marginBottom: 10 }}>Ver todo</Btn>
-          </div>
+          <GroupLabel>Distribución de gastos</GroupLabel>
           <Card>
             {["Necesidad", "Gusto", "Ahorro"].map((tipo, idx) => {
               const val = calc.gastosPorTipo[tipo];
@@ -1820,8 +1462,8 @@ function Dashboard({ state, calc, onNavigate }) {
               const p = meta > 0 ? val / meta : 0;
               const color = p > 1 ? C.bad : p > 0.85 ? C.brand : C.money;
               return (
-                <div key={tipo} style={{ marginBottom: idx < 2 ? 16 : 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 8 }}>
+                <div key={tipo} style={{ marginBottom: idx < 2 ? 18 : 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 8 }}>
                     <span style={{ color: C.textMuted, fontWeight: 600 }}>{tipo}</span>
                     <span style={{ color: C.textMuted, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
                       {fmt(val)} <span style={{ color: C.textFaint }}>/</span> {fmt(meta)}
@@ -1835,30 +1477,21 @@ function Dashboard({ state, calc, onNavigate }) {
         </div>
 
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <GroupLabel>Petnova</GroupLabel>
-            <Btn variant="text" onClick={() => onNavigate("petnova")} style={{ marginBottom: 10 }}>Ver todo</Btn>
-          </div>
-          <Card style={{ marginBottom: 24 }}>
+          <GroupLabel>Petnova</GroupLabel>
+          <Card style={{ marginBottom: 22 }}>
             <Row label="Ingresos del mes" value={fmt(calc.totalIngresosPetnovaLocal)} color={C.money} />
             <Row label="Tu sueldo" value={fmt(calc.sueldo)} />
             <Row label="Reinversión" value={fmt(calc.reinversion)} color={calc.reinversion >= 0 ? C.money : C.bad} last />
           </Card>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <GroupLabel>Personal</GroupLabel>
-            <Btn variant="text" onClick={() => onNavigate("personal")} style={{ marginBottom: 10 }}>Ver todo</Btn>
-          </div>
-          <Card style={{ marginBottom: 24 }}>
+          <GroupLabel>Personal</GroupLabel>
+          <Card style={{ marginBottom: 22 }}>
             <Row label="Ingresos personales" value={fmt(calc.totalIngresosPersonal)} color={C.money} />
             <Row label="Gastos personales" value={fmt(calc.totalGastosPersonal)} color={C.bad} />
             <Row label="Gasto hormiga" value={fmt(calc.gastoHormiga)} last />
           </Card>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <GroupLabel>Metas y futuro</GroupLabel>
-            <Btn variant="text" onClick={() => onNavigate("metas")} style={{ marginBottom: 10 }}>Ver todo</Btn>
-          </div>
+          <GroupLabel>Metas y futuro</GroupLabel>
           <Card>
             <Row label="Fondo de emergencia" value={pct(calc.pctFondo)} />
             <Row label="Proyección a 6 meses" value={fmt(calc.proyeccion[5]?.patrimonio || 0)} last />
@@ -1890,7 +1523,6 @@ function Petnova({ state, update, calc }) {
         value={fmt(calc.totalIngresosPetnovaLocal)}
         valueColor={C.money}
         sub={`Equivale a ${fmtUsd(calc.totalIngresosPetnovaUSD)}`}
-        icon="cat"
       />
 
       <div className="fin-2col">
@@ -1906,75 +1538,75 @@ function Petnova({ state, update, calc }) {
         </div>
 
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <GroupLabel style={{ marginBottom: 0 }}>Ingresos</GroupLabel>
-            <Btn onClick={addIngreso} icon="plus">Ingreso</Btn>
-          </div>
-          <Card style={{ marginBottom: 24 }}>
-            {state.ingresosPetnova.length === 0 && <EmptyState text="Aún no registras ingresos. Agrega el primero." icon="cat" />}
-            {state.ingresosPetnova.map((i, idx) => (
-              <TxRow
-                key={i.id}
-                icon="arrowUp"
-                iconColor={C.money}
-                last={idx === state.ingresosPetnova.length - 1}
-                onDelete={() => delIngreso(i.id)}
-                primary={
-                  <Field
-                    placeholder="Concepto (ej: Hotmart ebook)"
-                    value={i.concepto}
-                    onChange={(v) => updIngreso(i.id, { concepto: v })}
-                    style={txPrimaryStyle}
-                  />
-                }
-                meta={
-                  <>
-                    <Field type="date" value={i.fecha} onChange={(v) => updIngreso(i.id, { fecha: v })} style={{ ...txMetaStyle, width: 108 }} />
-                    <span style={{ color: C.textFaint }}>·</span>
-                    <Field type="number" placeholder="USD" value={i.montoUsd} onChange={(v) => updIngreso(i.id, { montoUsd: v })} style={{ ...txMetaStyle, width: 68 }} />
-                    <span style={{ color: C.textFaint }}>·</span>
-                    <Field type="number" placeholder="Tasa" value={i.tasa} onChange={(v) => updIngreso(i.id, { tasa: v })} style={{ ...txMetaStyle, width: 76 }} />
-                  </>
-                }
-                amount={fmt((Number(i.montoUsd) || 0) * (Number(i.tasa) || 0))}
-                amountColor={C.money}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <GroupLabel style={{ marginBottom: 0 }}>Ingresos</GroupLabel>
+        <Btn onClick={addIngreso} icon="plus">Ingreso</Btn>
+      </div>
+      <Card style={{ marginBottom: 22 }}>
+        {state.ingresosPetnova.length === 0 && <EmptyState text="Aún no registras ingresos. Agrega el primero." icon="cat" />}
+        {state.ingresosPetnova.map((i, idx) => (
+          <TxRow
+            key={i.id}
+            icon="arrowUp"
+            iconColor={C.money}
+            last={idx === state.ingresosPetnova.length - 1}
+            onDelete={() => delIngreso(i.id)}
+            primary={
+              <Field
+                placeholder="Concepto (ej: Hotmart ebook)"
+                value={i.concepto}
+                onChange={(v) => updIngreso(i.id, { concepto: v })}
+                style={txPrimaryStyle}
               />
-            ))}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.divider}`, fontWeight: 700, fontSize: 14 }}>
-              <span style={{ color: C.textFaint, fontWeight: 400, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>{fmtUsd(calc.totalIngresosPetnovaUSD)} →</span>
-              <span style={{ color: C.money, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>{fmt(calc.totalIngresosPetnovaLocal)}</span>
-            </div>
-          </Card>
+            }
+            meta={
+              <>
+                <Field type="date" value={i.fecha} onChange={(v) => updIngreso(i.id, { fecha: v })} style={{ ...txMetaStyle, width: 108 }} />
+                <span style={{ color: C.textFaint }}>·</span>
+                <Field type="number" placeholder="USD" value={i.montoUsd} onChange={(v) => updIngreso(i.id, { montoUsd: v })} style={{ ...txMetaStyle, width: 68 }} />
+                <span style={{ color: C.textFaint }}>·</span>
+                <Field type="number" placeholder="Tasa" value={i.tasa} onChange={(v) => updIngreso(i.id, { tasa: v })} style={{ ...txMetaStyle, width: 76 }} />
+              </>
+            }
+            amount={fmt((Number(i.montoUsd) || 0) * (Number(i.tasa) || 0))}
+            amountColor={C.money}
+          />
+        ))}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.divider}`, fontWeight: 700, fontSize: 14 }}>
+          <span style={{ color: C.textFaint, fontWeight: 400, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>{fmtUsd(calc.totalIngresosPetnovaUSD)} →</span>
+          <span style={{ color: C.money, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>{fmt(calc.totalIngresosPetnovaLocal)}</span>
+        </div>
+      </Card>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <GroupLabel style={{ marginBottom: 0 }}>Gastos operativos</GroupLabel>
-            <Btn onClick={addGasto} variant="ghost" icon="plus">Gasto</Btn>
-          </div>
-          <Card style={{ marginBottom: 24 }}>
-            {state.gastosPetnova.length === 0 && <EmptyState text="Sin gastos operativos registrados aún." icon="x" />}
-            {state.gastosPetnova.map((g, idx) => (
-              <TxRow
-                key={g.id}
-                icon={NEGOCIO_ICONS[g.categoria] || "arrowDown"}
-                iconColor={C.bad}
-                last={idx === state.gastosPetnova.length - 1}
-                onDelete={() => delGasto(g.id)}
-                primary={<Field placeholder="Concepto" value={g.concepto} onChange={(v) => updGasto(g.id, { concepto: v })} style={txPrimaryStyle} />}
-                meta={
-                  <>
-                    <Field type="date" value={g.fecha} onChange={(v) => updGasto(g.id, { fecha: v })} style={{ ...txMetaStyle, width: 108 }} />
-                    <span style={{ color: C.textFaint }}>·</span>
-                    <Dropdown value={g.categoria} onChange={(v) => updGasto(g.id, { categoria: v })} options={CATS_NEGOCIO} style={{ ...txMetaStyle, width: 150 }} />
-                  </>
-                }
-                amount={<Field type="number" placeholder="Monto" value={g.monto} onChange={(v) => updGasto(g.id, { monto: v })} style={txAmountStyle} />}
-                amountColor={C.bad}
-              />
-            ))}
-            <div style={{ textAlign: "right", marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.divider}`, fontWeight: 700, fontSize: 14, fontFamily: FONT, fontVariantNumeric: "tabular-nums", color: C.bad }}>
-              {fmt(calc.totalGastosPetnova)}
-            </div>
-          </Card>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <GroupLabel style={{ marginBottom: 0 }}>Gastos operativos</GroupLabel>
+        <Btn onClick={addGasto} variant="ghost" icon="plus">Gasto</Btn>
+      </div>
+      <Card style={{ marginBottom: 22 }}>
+        {state.gastosPetnova.length === 0 && <EmptyState text="Sin gastos operativos registrados aún." icon="x" />}
+        {state.gastosPetnova.map((g, idx) => (
+          <TxRow
+            key={g.id}
+            icon="arrowDown"
+            iconColor={C.bad}
+            last={idx === state.gastosPetnova.length - 1}
+            onDelete={() => delGasto(g.id)}
+            primary={<Field placeholder="Concepto" value={g.concepto} onChange={(v) => updGasto(g.id, { concepto: v })} style={txPrimaryStyle} />}
+            meta={
+              <>
+                <Field type="date" value={g.fecha} onChange={(v) => updGasto(g.id, { fecha: v })} style={{ ...txMetaStyle, width: 108 }} />
+                <span style={{ color: C.textFaint }}>·</span>
+                <Dropdown value={g.categoria} onChange={(v) => updGasto(g.id, { categoria: v })} options={CATS_NEGOCIO} style={{ ...txMetaStyle, width: 150 }} />
+              </>
+            }
+            amount={<Field type="number" placeholder="Monto" value={g.monto} onChange={(v) => updGasto(g.id, { monto: v })} style={txAmountStyle} />}
+            amountColor={C.bad}
+          />
+        ))}
+        <div style={{ textAlign: "right", marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.divider}`, fontWeight: 700, fontSize: 14, fontFamily: FONT, fontVariantNumeric: "tabular-nums", color: C.bad }}>
+          {fmt(calc.totalGastosPetnova)}
+        </div>
+      </Card>
         </div>
       </div>
     </div>
@@ -2003,7 +1635,6 @@ function Personal({ state, update, calc }) {
         value={fmt(calc.ahorroNeto)}
         valueColor={calc.ahorroNeto >= 0 ? C.money : C.bad}
         sub={`Meta de ahorro: ${pct(state.config.pctAhorro)} de tus ingresos`}
-        icon="user"
       />
 
       <div className="fin-2col">
@@ -2040,60 +1671,60 @@ function Personal({ state, update, calc }) {
         </div>
 
         <div>
-          <GroupLabel>Ingresos</GroupLabel>
-          <Card style={{ marginBottom: 22 }}>
-            <Row label="Sueldo desde Petnova" value={fmt(calc.sueldo)} />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "14px 0 8px" }}>
-              <span style={{ fontSize: 11, color: C.textFaint, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6 }}>Otros ingresos</span>
-              <Btn onClick={addOtroIngreso} variant="ghost" icon="plus" style={{ padding: "6px 12px", fontSize: 11.5 }}>Agregar</Btn>
-            </div>
-            {state.ingresosPersonalOtros.map((i, idx) => (
-              <TxRow
-                key={i.id}
-                icon="arrowUp"
-                iconColor={C.money}
-                last={idx === state.ingresosPersonalOtros.length - 1}
-                onDelete={() => delOtroIngreso(i.id)}
-                primary={<Field placeholder="Concepto" value={i.concepto} onChange={(v) => updOtroIngreso(i.id, { concepto: v })} style={txPrimaryStyle} />}
-                meta={<span style={{ fontSize: 11, color: C.textFaint }}>Otro ingreso</span>}
-                amount={<Field type="number" placeholder="Monto" value={i.monto} onChange={(v) => updOtroIngreso(i.id, { monto: v })} style={txAmountStyle} />}
-                amountColor={C.money}
-              />
-            ))}
-            <Row label="Total ingresos" value={fmt(calc.totalIngresosPersonal)} bold color={C.money} last />
-          </Card>
+      <GroupLabel>Ingresos</GroupLabel>
+      <Card style={{ marginBottom: 22 }}>
+        <Row label="Sueldo desde Petnova" value={fmt(calc.sueldo)} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "14px 0 8px" }}>
+          <span style={{ fontSize: 11, color: C.textFaint, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6 }}>Otros ingresos</span>
+          <Btn onClick={addOtroIngreso} variant="ghost" icon="plus" style={{ padding: "6px 12px", fontSize: 11.5 }}>Agregar</Btn>
+        </div>
+        {state.ingresosPersonalOtros.map((i, idx) => (
+          <TxRow
+            key={i.id}
+            icon="arrowUp"
+            iconColor={C.money}
+            last={idx === state.ingresosPersonalOtros.length - 1}
+            onDelete={() => delOtroIngreso(i.id)}
+            primary={<Field placeholder="Concepto" value={i.concepto} onChange={(v) => updOtroIngreso(i.id, { concepto: v })} style={txPrimaryStyle} />}
+            meta={<span style={{ fontSize: 11, color: C.textFaint }}>Otro ingreso</span>}
+            amount={<Field type="number" placeholder="Monto" value={i.monto} onChange={(v) => updOtroIngreso(i.id, { monto: v })} style={txAmountStyle} />}
+            amountColor={C.money}
+          />
+        ))}
+        <Row label="Total ingresos" value={fmt(calc.totalIngresosPersonal)} bold color={C.money} last />
+      </Card>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <GroupLabel style={{ marginBottom: 0 }}>Gastos personales</GroupLabel>
-            <Btn onClick={addGasto} variant="ghost" icon="plus">Gasto</Btn>
-          </div>
-          <Card style={{ marginBottom: 22 }}>
-            {state.gastosPersonal.length === 0 && <EmptyState text="Sin gastos registrados este mes." icon="x" />}
-            {state.gastosPersonal.map((g, idx) => {
-              const esHormiga = (Number(g.monto) || 0) > 0 && (Number(g.monto) || 0) < umbral;
-              return (
-                <TxRow
-                  key={g.id}
-                  icon={esHormiga ? "ant" : CATEGORY_ICONS[g.categoria] || "arrowDown"}
-                  iconColor={esHormiga ? C.brand : C.bad}
-                  last={idx === state.gastosPersonal.length - 1}
-                  onDelete={() => delGasto(g.id)}
-                  primary={<Field placeholder="Concepto" value={g.concepto} onChange={(v) => updGasto(g.id, { concepto: v })} style={txPrimaryStyle} />}
-                  meta={
-                    <>
-                      <Field type="date" value={g.fecha} onChange={(v) => updGasto(g.id, { fecha: v })} style={{ ...txMetaStyle, width: 108 }} />
-                      <span style={{ color: C.textFaint }}>·</span>
-                      <Dropdown value={g.categoria} onChange={(v) => updGasto(g.id, { categoria: v })} options={CATS_PERSONAL.map((c) => c.name)} style={{ ...txMetaStyle, width: 150 }} />
-                    </>
-                  }
-                  amount={<Field type="number" placeholder="Monto" value={g.monto} onChange={(v) => updGasto(g.id, { monto: v })} style={txAmountStyle} />}
-                  amountColor={esHormiga ? C.brand : C.bad}
-                />
-              );
-            })}
-            <Row label="Total gastos" value={fmt(calc.totalGastosPersonal)} bold color={C.bad} />
-            <Row label="Gasto hormiga del mes" value={fmt(calc.gastoHormiga)} last />
-          </Card>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <GroupLabel style={{ marginBottom: 0 }}>Gastos personales</GroupLabel>
+        <Btn onClick={addGasto} variant="ghost" icon="plus">Gasto</Btn>
+      </div>
+      <Card style={{ marginBottom: 22 }}>
+        {state.gastosPersonal.length === 0 && <EmptyState text="Sin gastos registrados este mes." icon="x" />}
+        {state.gastosPersonal.map((g, idx) => {
+          const esHormiga = (Number(g.monto) || 0) > 0 && (Number(g.monto) || 0) < umbral;
+          return (
+            <TxRow
+              key={g.id}
+              icon={esHormiga ? "ant" : "arrowDown"}
+              iconColor={esHormiga ? C.brand : C.bad}
+              last={idx === state.gastosPersonal.length - 1}
+              onDelete={() => delGasto(g.id)}
+              primary={<Field placeholder="Concepto" value={g.concepto} onChange={(v) => updGasto(g.id, { concepto: v })} style={txPrimaryStyle} />}
+              meta={
+                <>
+                  <Field type="date" value={g.fecha} onChange={(v) => updGasto(g.id, { fecha: v })} style={{ ...txMetaStyle, width: 108 }} />
+                  <span style={{ color: C.textFaint }}>·</span>
+                  <Dropdown value={g.categoria} onChange={(v) => updGasto(g.id, { categoria: v })} options={CATS_PERSONAL.map((c) => c.name)} style={{ ...txMetaStyle, width: 150 }} />
+                </>
+              }
+              amount={<Field type="number" placeholder="Monto" value={g.monto} onChange={(v) => updGasto(g.id, { monto: v })} style={txAmountStyle} />}
+              amountColor={esHormiga ? C.brand : C.bad}
+            />
+          );
+        })}
+        <Row label="Total gastos" value={fmt(calc.totalGastosPersonal)} bold color={C.bad} />
+        <Row label="Gasto hormiga del mes" value={fmt(calc.gastoHormiga)} last />
+      </Card>
         </div>
       </div>
     </div>
@@ -2121,54 +1752,33 @@ function Presupuesto({ state, update }) {
         value={fmt(totalGastado)}
         valueColor={heroColor}
         sub={totalLimite > 0 ? `${fmt(totalLimite)} presupuestado · ${pct(pctTotal)} usado` : "Define un límite por categoría para hacer seguimiento."}
-        icon="target"
       />
 
       <GroupLabel>Categorías</GroupLabel>
-      <Card padding="8px 22px">
+      <Card>
         {CATS_PERSONAL.map((cat, idx) => {
           const limite = Number(state.presupuestos[cat.name]) || 0;
           const gastado = gastadoPorCategoria(cat.name);
           const p = limite > 0 ? gastado / limite : 0;
           const estado = limite === 0 ? null : p < 0.8 ? "bien" : p <= 1 ? "cerca" : "excedido";
           const color = estado === "excedido" ? C.bad : estado === "cerca" ? C.brand : C.money;
-          const tipoColor = cat.tipo === "Necesidad" ? C.textMuted : cat.tipo === "Gusto" ? C.brand : C.money;
-          const tipoIcon = CATEGORY_ICONS[cat.name] || "dots";
           return (
-            <div key={cat.name} style={{ display: "flex", gap: 13, padding: "16px 0", borderBottom: idx < CATS_PERSONAL.length - 1 ? `1px solid ${C.divider}` : "none" }}>
-              <div
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: "50%",
-                  background: `${tipoColor}18`,
-                  color: tipoColor,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  marginTop: 2,
-                }}
-              >
-                <Icon name={tipoIcon} size={16} strokeWidth={1.8} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 10, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, flex: 1, minWidth: 130 }}>{cat.name}</span>
-                  <div style={{ width: 112 }}>
-                    <Field type="number" placeholder="Límite" value={state.presupuestos[cat.name] || ""} onChange={(v) => setLimite(cat.name, v)} />
-                  </div>
-                  {estado && <Chip estado={estado} />}
+            <div key={cat.name} style={{ padding: "15px 0", borderBottom: idx < CATS_PERSONAL.length - 1 ? `1px solid ${C.divider}` : "none" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 10, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 14, fontWeight: 600, flex: 1, minWidth: 150 }}>{cat.name}</span>
+                <div style={{ width: 120 }}>
+                  <Field type="number" placeholder="Límite" value={state.presupuestos[cat.name] || ""} onChange={(v) => setLimite(cat.name, v)} />
                 </div>
-                {limite > 0 && (
-                  <>
-                    <Meter pctValue={p} color={color} />
-                    <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
-                      {fmt(gastado)} de {fmt(limite)} · {pct(p)}
-                    </div>
-                  </>
-                )}
+                {estado && <Chip estado={estado} />}
               </div>
+              {limite > 0 && (
+                <>
+                  <Meter pctValue={p} color={color} />
+                  <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
+                    {fmt(gastado)} de {fmt(limite)} · {pct(p)}
+                  </div>
+                </>
+              )}
             </div>
           );
         })}
@@ -2194,7 +1804,6 @@ function Metas({ state, update, calc }) {
         value={pct(calc.pctFondo)}
         valueColor={calc.pctFondo >= 1 ? C.money : C.text}
         sub={`${fmt(state.fondoAhorrado || 0)} de ${fmt(calc.metaFondoEmergencia)} objetivo`}
-        icon="trophy"
       />
 
       <GroupLabel>Fondo de emergencia</GroupLabel>
@@ -2218,53 +1827,23 @@ function Metas({ state, update, calc }) {
         <GroupLabel style={{ marginBottom: 0 }}>Mis metas</GroupLabel>
         <Btn onClick={addMeta} icon="plus">Nueva meta</Btn>
       </div>
-      <Card padding={state.metas.length ? "10px" : "18px 20px"}>
+      <Card>
         {state.metas.length === 0 && <EmptyState text="Aún no tienes metas. ¿Un viaje? ¿Un equipo nuevo?" icon="trophy" />}
         {state.metas.map((m, idx) => {
           const obj = Number(m.objetivo) || 0;
           const ah = Number(m.ahorrado) || 0;
           const p = obj > 0 ? ah / obj : 0;
           return (
-            <div
-              key={m.id}
-              style={{
-                display: "flex",
-                gap: 13,
-                padding: 14,
-                borderRadius: 14,
-                background: C.cardAlt,
-                marginBottom: idx < state.metas.length - 1 ? 10 : 0,
-              }}
-            >
-              <div
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: "50%",
-                  background: C.brandBg,
-                  color: C.brand,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  marginTop: 2,
-                }}
-              >
-                <Icon name="trophy" size={16} strokeWidth={1.8} />
+            <div key={m.id} style={{ padding: "14px 0", borderBottom: idx < state.metas.length - 1 ? `1px solid ${C.divider}` : "none" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 100px 100px 28px", gap: 8, marginBottom: 10 }}>
+                <Field placeholder="Nombre de la meta" value={m.nombre} onChange={(v) => updMeta(m.id, { nombre: v })} />
+                <Field type="number" placeholder="Objetivo" value={m.objetivo} onChange={(v) => updMeta(m.id, { objetivo: v })} />
+                <Field type="number" placeholder="Ahorrado" value={m.ahorrado} onChange={(v) => updMeta(m.id, { ahorrado: v })} />
+                <IconBtn onClick={() => delMeta(m.id)} />
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", gap: 7, marginBottom: 8 }}>
-                  <Field placeholder="Nombre de la meta" value={m.nombre} onChange={(v) => updMeta(m.id, { nombre: v })} style={{ flex: 1 }} />
-                  <IconBtn onClick={() => delMeta(m.id)} />
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 10 }}>
-                  <Field type="number" placeholder="Objetivo" value={m.objetivo} onChange={(v) => updMeta(m.id, { objetivo: v })} />
-                  <Field type="number" placeholder="Ahorrado" value={m.ahorrado} onChange={(v) => updMeta(m.id, { ahorrado: v })} />
-                </div>
-                <Meter pctValue={p} color={C.brand} />
-                <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
-                  {fmt(ah)} de {fmt(obj)} · {pct(p)}
-                </div>
+              <Meter pctValue={p} color={C.brand} />
+              <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
+                {fmt(ah)} de {fmt(obj)} · {pct(p)}
               </div>
             </div>
           );
@@ -2306,56 +1885,31 @@ function Historial({ state, update, calc }) {
         label="Patrimonio actual"
         value={fmt(patrimonioActual)}
         sub={`Promedio de ahorro reciente: ${fmt(calc.promAhorro)}/mes`}
-        icon="trend"
       />
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <GroupLabel style={{ marginBottom: 0 }}>Historial mensual</GroupLabel>
         <Btn onClick={addMes} icon="plus">Cerrar mes</Btn>
       </div>
-      <Card padding={state.historial.length ? "10px" : "18px 20px"} style={{ marginBottom: 22 }}>
+      <Card style={{ marginBottom: 22 }}>
         {state.historial.length === 0 && <EmptyState text="Cierra tu primer mes para empezar a ver tu evolución." icon="trend" />}
         {state.historial.map((h, idx) => (
           <div
             key={h.id}
             style={{
-              display: "flex",
-              gap: 13,
-              padding: 14,
-              borderRadius: 14,
-              background: C.cardAlt,
-              marginBottom: idx < state.historial.length - 1 ? 10 : 0,
+              display: "grid",
+              gridTemplateColumns: "110px 1fr 1fr 90px 28px",
+              gap: 8,
+              alignItems: "center",
+              padding: "10px 0",
+              borderBottom: idx < state.historial.length - 1 ? `1px solid ${C.divider}` : "none",
             }}
           >
-            <div
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: "50%",
-                background: C.brandBg,
-                color: C.brand,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                marginTop: 2,
-              }}
-            >
-              <Icon name="trend" size={16} strokeWidth={1.8} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", gap: 7, marginBottom: 8 }}>
-                <Field placeholder="Ene 2026" value={h.mes} onChange={(v) => updMes(h.id, { mes: v })} style={{ flex: 1 }} />
-                <IconBtn onClick={() => delMes(h.id)} />
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
-                <Field type="number" placeholder="Ahorro" value={h.ahorro} onChange={(v) => updMes(h.id, { ahorro: v })} />
-                <Field type="number" placeholder="Patrimonio" value={h.patrimonio} onChange={(v) => updMes(h.id, { patrimonio: v })} />
-              </div>
-              <div style={{ fontSize: 11.5, color: C.textFaint, marginTop: 7, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
-                Patrimonio: {fmt(h.patrimonio)}
-              </div>
-            </div>
+            <Field placeholder="Ene 2026" value={h.mes} onChange={(v) => updMes(h.id, { mes: v })} />
+            <Field type="number" placeholder="Ahorro" value={h.ahorro} onChange={(v) => updMes(h.id, { ahorro: v })} />
+            <Field type="number" placeholder="Patrimonio" value={h.patrimonio} onChange={(v) => updMes(h.id, { patrimonio: v })} />
+            <div style={{ fontSize: 12, color: C.textMuted, fontFamily: FONT, fontVariantNumeric: "tabular-nums", textAlign: "right" }}>{fmt(h.patrimonio)}</div>
+            <IconBtn onClick={() => delMes(h.id)} />
           </div>
         ))}
       </Card>
