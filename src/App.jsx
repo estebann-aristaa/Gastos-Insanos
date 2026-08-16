@@ -168,6 +168,11 @@ const Icon = ({ name, size = 18, color = "currentColor", strokeWidth = 1.6 }) =>
     pieChart: <><path d="M12 4.5a7.5 7.5 0 107.5 7.5H12V4.5z" /><path d="M20 12a8 8 0 00-.2-1.8" /><path d="M12 4.5V12h8" /></>,
     transfer: <><path d="M9 4v14" /><path d="M5 8l4-4 4 4" /><path d="M15 6v14" /><path d="M11 16l4 4 4-4" /></>,
     swapHoriz: <><path d="M4 7h11.5" /><path d="M12 4l3.5 3L12 10" /><path d="M20 17H8.5" /><path d="M12 20l-3.5-3L12 14" /></>,
+    laptop: <><rect x="3.8" y="5.2" width="16.4" height="11.2" rx="2" /><path d="M2.8 18.4h18.4" /></>,
+    gamepad: <><rect x="2.8" y="7.8" width="18.4" height="10.4" rx="5.2" /><path d="M8 13h2.8M9.4 11.6v2.8M15.4 13h.01M17.2 11.2h.01" /></>,
+    calendar: <><rect x="3.8" y="5.2" width="16.4" height="15.6" rx="2.2" /><path d="M8.8 3.8v3.6M15.2 3.8v3.6M3.8 9.6h16.4" /></>,
+    chevronDown: <path d="M5.5 9l6.5 6.5L18.5 9" />,
+    bell: <><path d="M5.5 16.5a7 7 0 014-6.2V8a2.5 2.5 0 015 0v2.3a7 7 0 014 6.2" /><path d="M10 19a2 2 0 004 0" /></>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
@@ -1627,7 +1632,7 @@ function AppInner({ user }) {
             <Presupuesto state={state} update={update} calc={calc} onOpenMenu={() => setMenuOpen(true)} userName={user.user_metadata?.name || user.email?.split('@')[0] || 'Usuario'} saving={saving} />
           </div>
           <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
-            <Metas state={state} update={update} calc={calc} />
+            <Metas state={state} update={update} calc={calc} onOpenMenu={() => setMenuOpen(true)} />
           </div>
           <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
             <Historial state={state} update={update} calc={calc} />
@@ -4739,96 +4744,697 @@ function Presupuesto({ state, update, calc, onOpenMenu, userName, saving }) {
 /* ============================================================
    METAS
    ============================================================ */
-function Metas({ state, update, calc }) {
-  const addMeta = () => update({ metas: [...state.metas, { id: uid(), nombre: "", objetivo: "", ahorrado: "" }] });
+function Metas({ state, update, calc, onOpenMenu }) {
+  const addMeta = () => update({ metas: [...state.metas, { id: uid(), nombre: "", objetivo: "", ahorrado: "", categoria: "Personal • Ahorro", fechaLimite: "", icono: "trophy", ritmoSemanal: "" }] });
   const updMeta = (id, patch) => update({ metas: state.metas.map((m) => (m.id === id ? { ...m, ...patch } : m)) });
   const delMeta = (id) => update({ metas: state.metas.filter((m) => m.id !== id) });
 
+  const [visible, setVisible] = useState(true);
+  const [tabActiva, setTabActiva] = useState("activas");
+
+  const totalAhorradoMetas = state.metas.reduce((acc, m) => acc + (Number(m.ahorrado) || 0), 0) + (Number(state.fondoAhorrado) || 0);
+  const totalMetas = state.metas.length + 1;
+  const metasConFondo = [
+    {
+      id: "fondo_emergencia",
+      esFondo: true,
+      nombre: "Fondo de Emergencia",
+      categoria: "Seguridad • Protección",
+      icono: "home",
+      objetivo: calc.metaFondoEmergencia,
+      ahorrado: Number(state.fondoAhorrado) || 0,
+      fechaLimite: "",
+      ritmoSemanal: "",
+    },
+    ...state.metas.map((m) => ({
+      ...m,
+      objetivo: Number(m.objetivo) || 0,
+      ahorrado: Number(m.ahorrado) || 0,
+      categoria: m.categoria || "Personal • Ahorro",
+      icono: m.icono || "trophy",
+      fechaLimite: m.fechaLimite || "",
+      ritmoSemanal: m.ritmoSemanal || "",
+    })),
+  ];
+
+  const getMetaEstado = (m) => {
+    const p = m.objetivo > 0 ? m.ahorrado / m.objetivo : 0;
+    if (p >= 1) return "completada";
+    let semRestantes = 24;
+    if (m.fechaLimite) {
+      try {
+        const hoy = new Date();
+        const lim = new Date(m.fechaLimite);
+        semRestantes = Math.max(1, Math.ceil((lim - hoy) / (7 * 24 * 60 * 60 * 1000)));
+      } catch (e) {}
+    }
+    const faltante = Math.max(0, m.objetivo - m.ahorrado);
+    const semanalNec = semRestantes > 0 ? faltante / semRestantes : 0;
+    if (p < 0.4 && semanalNec > 0 && semRestantes < 12) return "riesgo";
+    return "curso";
+  };
+
+  const getMetaColor = (estado, p) => {
+    if (estado === "completada") return { bar: "#52D377", badge: C.moneyBg, badgeBorder: C.moneyBorder, text: "#52D377", circleBg: "rgba(82,211,119,0.16)" };
+    if (estado === "riesgo") return { bar: "#bd64f5", badge: "rgba(59,130,246,0.14)", badgeBorder: "rgba(59,130,246,0.3)", text: "#bd64f5", circleBg: "rgba(189,100,245,0.16)" };
+    if (p >= 0.75) return { bar: "#52D377", badge: C.moneyBg, badgeBorder: C.moneyBorder, text: "#52D377", circleBg: "rgba(82,211,119,0.14)" };
+    if (p >= 0.5) return { bar: C.warn, badge: C.warnBg, badgeBorder: C.warnBorder, text: C.warn, circleBg: "rgba(250,154,58,0.14)" };
+    return { bar: "linear-gradient(90deg,#bd64f5 0%,#9c3fe0 100%)", badge: C.brandBg, badgeBorder: C.brandBorder, text: "#bd64f5", circleBg: "rgba(189,100,245,0.16)" };
+  };
+
+  const getEstadoLabel = (est) => est === "completada" ? "Completada" : est === "riesgo" ? "En riesgo" : "En curso";
+
+  const iconoColorMap = {
+    plane: { icon: "plane", bg: "rgba(189,100,245,0.16)", color: "#bd64f5" },
+    laptop: { icon: "laptop", bg: "rgba(250,154,58,0.14)", color: C.warn },
+    home: { icon: "home", bg: "rgba(82,211,119,0.16)", color: "#52D377" },
+    gamepad: { icon: "gamepad", bg: "rgba(189,100,245,0.16)", color: "#bd64f5" },
+    check: { icon: "check", bg: "rgba(82,211,119,0.16)", color: "#52D377" },
+    trophy: { icon: "trophy", bg: "rgba(189,100,245,0.14)", color: "#bd64f5" },
+    car: { icon: "car", bg: "rgba(250,154,58,0.14)", color: C.warn },
+    heart: { icon: "heart", bg: "rgba(245,50,34,0.14)", color: C.bad },
+    creditcard: { icon: "creditcard", bg: "rgba(61,182,242,0.14)", color: "#3DB6F2" },
+    bag: { icon: "bag", bg: "rgba(142,124,255,0.16)", color: C.tutorialViolet },
+  };
+
+  const getIconoMeta = (m) => {
+    const clave = m.icono && iconoColorMap[m.icono] ? m.icono : "trophy";
+    return iconoColorMap[clave] || iconoColorMap.trophy;
+  };
+
+  const metasFiltradas = metasConFondo.filter((m) => {
+    const est = getMetaEstado(m);
+    if (tabActiva === "activas") return est !== "completada";
+    if (tabActiva === "completadas") return est === "completada";
+    return false;
+  });
+
+  const metasCompletadasCount = metasConFondo.filter((m) => getMetaEstado(m) === "completada").length;
+  const metasActivasCount = totalMetas - metasCompletadasCount;
+  const crecimientoMes = state.metas.length > 0 ? (Number(state.metas[0].ahorrado) || 0) : 245320;
+
+  const fmtFecha = (s) => {
+    if (!s) return "";
+    try {
+      const d = new Date(s);
+      const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+      return `${d.getDate()} ${meses[d.getMonth()]} ${d.getFullYear()}`;
+    } catch (e) { return s; }
+  };
+
   return (
-    <div>
-      <SectionHead badge={<PrivacyBadge shared={false} />}>Metas de ahorro</SectionHead>
-
-      <Hero
-        label="Fondo de emergencia"
-        value={pct(calc.pctFondo)}
-        valueColor={calc.pctFondo >= 1 ? C.money : C.text}
-        sub={`${fmt(state.fondoAhorrado || 0)} de ${fmt(calc.metaFondoEmergencia)} objetivo`}
-        icon="trophy"
-      />
-
-      <GroupLabel>Fondo de emergencia</GroupLabel>
-      <Card style={{ marginBottom: 22 }}>
-        <Row label="Gastos fijos mensuales" value={fmt(calc.gastosPorTipo.Necesidad)} />
-        <Row label="Meses de cobertura" value={`${state.config.mesesFondo} meses`} />
-        <Row label="Meta del fondo" value={fmt(calc.metaFondoEmergencia)} bold last />
-        <div style={{ margin: "16px 0 10px" }}>
-          <div style={{ fontSize: 11, color: C.textFaint, marginBottom: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6 }}>
-            Ahorrado hasta ahora
+    <div style={{ paddingBottom: "120px" }}>
+      {/* HEADER */}
+      <div style={{ marginBottom: 28, paddingTop: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <button
+            onClick={onOpenMenu}
+            className="fin-tap"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#ffffff",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Icon name="menu" size={20} strokeWidth={1.8} />
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                background: "rgba(189,100,245,0.18)",
+                border: "1px solid rgba(189,100,245,0.25)",
+                color: "#bd64f5",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Icon name="target" size={18} strokeWidth={1.8} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 20, fontWeight: 700, color: "#ffffff", letterSpacing: -0.3 }}>
+                <span>Metas</span>
+                <Icon name="chevronDown" size={15} strokeWidth={2} color="#9ca3af" />
+              </div>
+              <div style={{ fontSize: 12.5, color: "#9ca3af", marginTop: 2 }}>Objetivos de ahorro</div>
+            </div>
           </div>
-          <Field type="number" value={state.fondoAhorrado || ""} onChange={(v) => update({ fondoAhorrado: v })} placeholder="0" />
+          <button
+            className="fin-tap"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#ffffff",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative",
+            }}
+          >
+            <Icon name="bell" size={18} strokeWidth={1.8} />
+            <div style={{ position: "absolute", top: 10, right: 11, width: 7, height: 7, borderRadius: "50%", background: "#bd64f5", border: "1.5px solid #1C1D21" }} />
+          </button>
         </div>
-        <Meter pctValue={calc.pctFondo} color={C.brand} height={8} />
-        <div style={{ textAlign: "right", fontSize: 12.5, marginTop: 8, fontWeight: 700, color: C.brand, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
-          {pct(calc.pctFondo)} de la meta
-        </div>
-      </Card>
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-        <GroupLabel style={{ marginBottom: 0 }}>Mis metas</GroupLabel>
-        <Btn onClick={addMeta} icon="plus">Nueva meta</Btn>
       </div>
-      <Card padding={state.metas.length ? "10px" : "18px 20px"}>
-        {state.metas.length === 0 && <EmptyState text="Aún no tienes metas. ¿Un viaje? ¿Un equipo nuevo?" icon="trophy" />}
-        {state.metas.map((m, idx) => {
-          const obj = Number(m.objetivo) || 0;
-          const ah = Number(m.ahorrado) || 0;
-          const p = obj > 0 ? ah / obj : 0;
+
+      {/* TARJETA RESUMEN TOTAL AHORRADO + METAS ACTIVAS */}
+      <div
+        style={{
+          background: "#1C1D21",
+          border: "1px solid rgba(255,255,255,0.05)",
+          borderRadius: 22,
+          padding: "22px 20px",
+          marginBottom: 28,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "stretch", gap: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, paddingRight: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <span style={{ fontSize: 14.5, color: "#9ca3af", fontWeight: 600, letterSpacing: 0.2 }}>Total ahorrado</span>
+              <button
+                onClick={() => setVisible((v) => !v)}
+                className="fin-tap"
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: "50%",
+                  background: "transparent",
+                  border: "none",
+                  color: "#9ca3af",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 0,
+                }}
+              >
+                <Icon name={visible ? "eye" : "eyeOff"} size={16} strokeWidth={1.8} />
+              </button>
+            </div>
+            <div
+              style={{
+                fontSize: 46,
+                fontWeight: 800,
+                letterSpacing: -1.8,
+                lineHeight: 1,
+                color: "#ffffff",
+                fontFamily: FONT,
+                fontVariantNumeric: "tabular-nums",
+                wordBreak: "break-word",
+                marginBottom: 16,
+              }}
+            >
+              {visible ? `$ ${fmt(totalAhorradoMetas).replace("$", "").trim()}.75` : "$ ••••••"}
+            </div>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "7px 16px",
+                borderRadius: 999,
+                background: "rgba(189, 100, 245, 0.15)",
+                border: "1px solid rgba(189,100,245,0.3)",
+              }}
+            >
+              <span style={{ fontSize: 12.5, fontWeight: 800, color: "#bd64f5", fontFamily: FONT, letterSpacing: 0.2 }}>
+                + $ 245,320
+              </span>
+              <span style={{ width: 3, height: 3, borderRadius: "50%", background: "#bd64f5" }} />
+              <span style={{ fontSize: 12.5, fontWeight: 800, color: "#bd64f5", fontFamily: FONT, letterSpacing: 0.2 }}>
+                Este mes
+              </span>
+            </div>
+          </div>
+          <div
+            style={{
+              width: 1,
+              background: "rgba(255,255,255,0.06)",
+              margin: "6px 0",
+              alignSelf: "stretch",
+            }}
+          />
+          <div style={{ flex: 1, minWidth: 0, paddingLeft: 16, display: "flex", alignItems: "center" }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, color: "#9ca3af", fontWeight: 600, marginBottom: 6 }}>Metas activas</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 4 }}>
+                <div style={{ fontSize: 42, fontWeight: 800, color: "#bd64f5", fontFamily: FONT, letterSpacing: -1.2, lineHeight: 1 }}>
+                  {metasActivasCount}
+                </div>
+              </div>
+              <div style={{ fontSize: 13, color: "#9ca3af", fontWeight: 500 }}>de {totalMetas}</div>
+            </div>
+            <div
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: "50%",
+                background: "rgba(189,100,245,0.15)",
+                border: "1px solid rgba(189,100,245,0.22)",
+                color: "#bd64f5",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                marginLeft: 8,
+              }}
+            >
+              <Icon name="target" size={30} strokeWidth={1.8} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* TABS + TÍTULO */}
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ fontSize: 21, fontWeight: 700, color: "#ffffff", letterSpacing: -0.3, marginBottom: 18 }}>Mis metas</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, background: "rgba(255,255,255,0.03)", padding: 4, borderRadius: 999, border: "1px solid rgba(255,255,255,0.05)" }}>
+            {[
+              { id: "activas", label: "Activas" },
+              { id: "completadas", label: "Completadas" },
+              { id: "pausadas", label: "Pausadas" },
+            ].map((t) => {
+              const act = tabActiva === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setTabActiva(t.id)}
+                  className="fin-tap"
+                  style={{
+                    padding: "8px 18px",
+                    fontSize: 14,
+                    fontWeight: act ? 700 : 600,
+                    color: act ? "#ffffff" : "#9ca3af",
+                    background: act ? C.brandGradient : "transparent",
+                    border: "none",
+                    borderRadius: 999,
+                    cursor: "pointer",
+                    fontFamily: FONT,
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            className="fin-tap"
+            style={{
+              fontSize: 13.5,
+              fontWeight: 700,
+              color: "#bd64f5",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: FONT,
+              padding: 0,
+            }}
+          >
+            Ver todas
+          </button>
+        </div>
+      </div>
+
+      {/* LISTADO DE TARJETAS DE METAS */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 22 }}>
+        {metasFiltradas.length === 0 && (
+          <div
+            style={{
+              background: "#1C1D21",
+              border: "1px solid rgba(255,255,255,0.05)",
+              borderRadius: 22,
+              padding: "40px 20px",
+              textAlign: "center",
+            }}
+          >
+            <div style={{ width: 54, height: 54, borderRadius: "50%", background: "rgba(189,100,245,0.14)", color: "#bd64f5", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+              <Icon name="trophy" size={22} strokeWidth={1.8} />
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#ffffff", marginBottom: 4 }}>
+              {tabActiva === "activas" ? "No hay metas activas" : tabActiva === "completadas" ? "Aún no completas ninguna meta" : "No hay metas pausadas"}
+            </div>
+            <div style={{ fontSize: 13, color: "#9ca3af" }}>
+              {tabActiva === "activas" ? "Crea una nueva para empezar" : "¡Sigue ahorrando!"}
+            </div>
+          </div>
+        )}
+        {metasFiltradas.map((m) => {
+          const estado = getMetaEstado(m);
+          const colors = getMetaColor(estado, m.objetivo > 0 ? m.ahorrado / m.objetivo : 0);
+          const iconoInfo = getIconoMeta(m);
+          const p = m.objetivo > 0 ? Math.min(1, m.ahorrado / m.objetivo) : 0;
+          const pctNum = Math.round(p * 100);
+          const faltante = Math.max(0, m.objetivo - m.ahorrado);
+
           return (
             <div
               key={m.id}
               style={{
-                display: "flex",
-                gap: 13,
-                padding: 14,
-                borderRadius: 14,
-                background: C.cardAlt,
-                marginBottom: idx < state.metas.length - 1 ? 10 : 0,
+                background: "#1C1D21",
+                border: "1px solid rgba(255,255,255,0.05)",
+                borderRadius: 22,
+                padding: "18px 18px",
+                position: "relative",
               }}
             >
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 16 }}>
+                <div
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: "50%",
+                    background: iconoInfo.bg,
+                    color: iconoInfo.color,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon name={iconoInfo.icon} size={26} strokeWidth={1.9} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      {m.esFondo ? (
+                        <div
+                          style={{
+                            fontSize: 17,
+                            fontWeight: 700,
+                            color: "#ffffff",
+                            letterSpacing: -0.2,
+                            marginBottom: 2,
+                          }}
+                        >
+                          {m.nombre}
+                        </div>
+                      ) : (
+                        <input
+                          value={m.nombre}
+                          onChange={(e) => updMeta(m.id, { nombre: e.target.value })}
+                          placeholder="Nombre de la meta"
+                          className="fin-field"
+                          style={{
+                            width: "100%",
+                            background: "transparent",
+                            border: "none",
+                            outline: "none",
+                            fontSize: 17,
+                            fontWeight: 700,
+                            color: "#ffffff",
+                            letterSpacing: -0.2,
+                            fontFamily: FONT,
+                            padding: 0,
+                            marginBottom: 2,
+                            boxSizing: "border-box",
+                          }}
+                        />
+                      )}
+                      <div style={{ fontSize: 12.5, color: "#9ca3af", fontWeight: 500 }}>{m.categoria}</div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          padding: "5px 12px",
+                          borderRadius: 999,
+                          background: colors.badge,
+                          border: `1px solid ${colors.badgeBorder}`,
+                          fontSize: 11.5,
+                          fontWeight: 700,
+                          color: colors.text,
+                          fontFamily: FONT,
+                          letterSpacing: 0.1,
+                        }}
+                      >
+                        {getEstadoLabel(estado)}
+                      </span>
+                      {!m.esFondo && (
+                        <button
+                          onClick={() => delMeta(m.id)}
+                          className="fin-tap"
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: "50%",
+                            background: "transparent",
+                            border: "none",
+                            color: "#4B4B4B",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: 0,
+                          }}
+                        >
+                          <Icon name="dots" size={16} strokeWidth={2} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* MONTO + PORCENTAJE */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
+                  {m.esFondo ? (
+                    <>
+                      <span style={{ fontSize: 20, fontWeight: 800, color: "#ffffff", fontFamily: FONT, fontVariantNumeric: "tabular-nums", letterSpacing: -0.4 }}>
+                        {fmt(m.ahorrado)}
+                      </span>
+                      <span style={{ fontSize: 13, color: "#9ca3af", fontWeight: 500 }}>de</span>
+                      <span style={{ fontSize: 15, fontWeight: 600, color: "#9ca3af", fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
+                        {fmt(m.objetivo)}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <input
+                        type="number"
+                        value={m.ahorrado || ""}
+                        onChange={(e) => updMeta(m.id, { ahorrado: e.target.value })}
+                        placeholder="0"
+                        className="fin-field"
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          outline: "none",
+                          fontSize: 20,
+                          fontWeight: 800,
+                          color: "#ffffff",
+                          fontFamily: FONT,
+                          fontVariantNumeric: "tabular-nums",
+                          letterSpacing: -0.4,
+                          padding: 0,
+                          width: 120,
+                          minWidth: 0,
+                          boxSizing: "border-box",
+                        }}
+                      />
+                      <span style={{ fontSize: 13, color: "#9ca3af", fontWeight: 500 }}>de</span>
+                      <input
+                        type="number"
+                        value={m.objetivo || ""}
+                        onChange={(e) => updMeta(m.id, { objetivo: e.target.value })}
+                        placeholder="Objetivo"
+                        className="fin-field"
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          outline: "none",
+                          fontSize: 15,
+                          fontWeight: 600,
+                          color: "#9ca3af",
+                          fontFamily: FONT,
+                          fontVariantNumeric: "tabular-nums",
+                          padding: 0,
+                          width: 110,
+                          minWidth: 0,
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    </>
+                  )}
+                </div>
+                <div
+                  style={{
+                    fontSize: 26,
+                    fontWeight: 800,
+                    color: colors.text,
+                    fontFamily: FONT,
+                    fontVariantNumeric: "tabular-nums",
+                    letterSpacing: -0.8,
+                    lineHeight: 1,
+                  }}
+                >
+                  {pctNum}%
+                </div>
+              </div>
+
+              {/* BARRA DE PROGRESO */}
               <div
                 style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: "50%",
-                  background: C.brandBg,
-                  color: C.brand,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  marginTop: 2,
+                  width: "100%",
+                  height: 7,
+                  borderRadius: 999,
+                  background: "rgba(255,255,255,0.06)",
+                  overflow: "hidden",
+                  marginBottom: 14,
                 }}
               >
-                <Icon name="trophy" size={16} strokeWidth={1.8} />
+                <div
+                  style={{
+                    width: `${pctNum}%`,
+                    height: "100%",
+                    borderRadius: 999,
+                    background: colors.bar,
+                    transition: "width 0.4s ease",
+                  }}
+                />
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", gap: 7, marginBottom: 8 }}>
-                  <Field placeholder="Nombre de la meta" value={m.nombre} onChange={(v) => updMeta(m.id, { nombre: v })} style={{ flex: 1 }} />
-                  <IconBtn onClick={() => delMeta(m.id)} />
+
+              {/* FECHA LÍMITE + FALTANTE / RITMO */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Icon name="calendar" size={14} strokeWidth={1.8} color="#9ca3af" />
+                  {m.esFondo ? (
+                    <span style={{ fontSize: 12.5, color: "#9ca3af", fontWeight: 500 }}>
+                      Gastos fijos: {fmt(calc.gastosPorTipo.Necesidad)}/mes • {state.config.mesesFondo || 6}m cobertura
+                    </span>
+                  ) : (
+                    <>
+                      <input
+                        value={m.fechaLimite}
+                        onChange={(e) => updMeta(m.id, { fechaLimite: e.target.value })}
+                        type="date"
+                        className="fin-field"
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          outline: "none",
+                          fontSize: 12.5,
+                          color: "#9ca3af",
+                          fontWeight: 500,
+                          fontFamily: FONT,
+                          padding: 0,
+                          colorScheme: "dark",
+                        }}
+                      />
+                      {!m.fechaLimite && <span style={{ fontSize: 12.5, color: "#4B4B4B", fontWeight: 500 }}>Sin límite</span>}
+                    </>
+                  )}
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 10 }}>
-                  <Field type="number" placeholder="Objetivo" value={m.objetivo} onChange={(v) => updMeta(m.id, { objetivo: v })} />
-                  <Field type="number" placeholder="Ahorrado" value={m.ahorrado} onChange={(v) => updMeta(m.id, { ahorrado: v })} />
-                </div>
-                <Meter pctValue={p} color={C.brand} />
-                <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
-                  {fmt(ah)} de {fmt(obj)} · {pct(p)}
-                </div>
+                {estado === "completada" ? (
+                  <div style={{ fontSize: 12.5, color: "#52D377", fontWeight: 700, fontFamily: FONT }}>
+                    Completada el 10 Mar 2025
+                  </div>
+                ) : estado === "riesgo" && m.ritmoSemanal ? (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                    <div style={{ fontSize: 12.5, color: "#9ca3af", fontWeight: 600, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
+                      Faltan {fmt(faltante)}
+                    </div>
+                    <div style={{ fontSize: 12.5, color: "#F53222", fontWeight: 800, fontFamily: FONT }}>
+                      Debes ahorrar {m.ritmoSemanal}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 12.5, color: "#9ca3af", fontWeight: 600, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
+                    Faltan {fmt(faltante)}
+                  </div>
+                )}
               </div>
+
+              {/* EDITOR FONDO: campo de ahorro fondo emergencia */}
+              {m.esFondo && (
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div style={{ fontSize: 11, color: C.textFaint, marginBottom: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6 }}>
+                    Ahorrado hasta ahora (editar)
+                  </div>
+                  <input
+                    type="number"
+                    value={state.fondoAhorrado || ""}
+                    onChange={(e) => update({ fondoAhorrado: e.target.value })}
+                    placeholder="0"
+                    className="fin-field"
+                    style={{
+                      width: "100%",
+                      background: "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      borderRadius: 12,
+                      padding: "11px 14px",
+                      fontSize: 14,
+                      color: "#ffffff",
+                      fontFamily: FONT,
+                      fontVariantNumeric: "tabular-nums",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+              )}
             </div>
           );
         })}
-      </Card>
+      </div>
+
+      {/* BOTÓN INFERIOR: CREAR NUEVA META */}
+      <button
+        onClick={addMeta}
+        className="fin-tap"
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          padding: "16px 18px",
+          background: "rgba(189,100,245,0.08)",
+          border: "1px solid rgba(189,100,245,0.22)",
+          borderRadius: 22,
+          cursor: "pointer",
+          textAlign: "left",
+          fontFamily: FONT,
+        }}
+      >
+        <div
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            background: C.brandGradient,
+            color: "#ffffff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            boxShadow: "0 6px 18px -6px rgba(156,63,224,0.55)",
+          }}
+        >
+          <Icon name="target" size={20} strokeWidth={2} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15.5, fontWeight: 700, color: "#bd64f5", letterSpacing: -0.1 }}>Crear nueva meta</div>
+          <div style={{ fontSize: 12.5, color: "#9ca3af", fontWeight: 500, marginTop: 2 }}>Define un nuevo objetivo de ahorro</div>
+        </div>
+        <Icon name="chevronRight" size={20} strokeWidth={1.8} color="#bd64f5" />
+      </button>
     </div>
   );
 }
