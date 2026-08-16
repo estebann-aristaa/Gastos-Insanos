@@ -1621,7 +1621,7 @@ function AppInner({ user }) {
             <Petnova state={state} update={update} calc={calc} onOpenMenu={() => setMenuOpen(true)} userName={user.user_metadata?.name || user.email?.split('@')[0] || 'Usuario'} saving={saving} />
           </div>
           <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
-            <Personal state={state} update={update} calc={calc} />
+            <Personal state={state} update={update} calc={calc} onOpenMenu={() => setMenuOpen(true)} userName={user.user_metadata?.name || user.email?.split('@')[0] || 'Usuario'} saving={saving} />
           </div>
           <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
             <Presupuesto state={state} update={update} />
@@ -3161,7 +3161,7 @@ function Petnova({ state, update, calc, onOpenMenu, userName, saving }) {
 /* ============================================================
    PERSONAL
    ============================================================ */
-function Personal({ state, update, calc }) {
+function Personal({ state, update, calc, onOpenMenu, userName, saving }) {
   const addOtroIngreso = () => update({ ingresosPersonalOtros: [...state.ingresosPersonalOtros, { id: uid(), concepto: "", monto: "" }] });
   const updOtroIngreso = (id, patch) => update({ ingresosPersonalOtros: state.ingresosPersonalOtros.map((i) => (i.id === id ? { ...i, ...patch } : i)) });
   const delOtroIngreso = (id) => update({ ingresosPersonalOtros: state.ingresosPersonalOtros.filter((i) => i.id !== id) });
@@ -3171,107 +3171,836 @@ function Personal({ state, update, calc }) {
   const delGasto = (id) => update({ gastosPersonal: state.gastosPersonal.filter((g) => g.id !== id) });
   const umbral = Number(state.config.umbralHormiga) || 0;
 
+  const [visible, setVisible] = useState(true);
+  const totalIngresos = Number(calc.totalIngresosPersonal) || 0;
+  const totalGastos = Number(calc.totalGastosPersonal) || 0;
+  const saldoDisponible = totalIngresos - totalGastos;
+  const nIngresos = state.ingresosPersonalOtros.length + 1; // +1 por el sueldo calculado de Petnova
+  const nGastos = state.gastosPersonal.length;
+
+  const deltaMonto = saldoDisponible;
+  const deltaPct = totalIngresos > 0 ? (saldoDisponible / totalIngresos) * 100 : 0;
+  const deltaUp = deltaMonto >= 0;
+
+  const gastoHormiga = Number(calc.gastoHormiga) || 0;
+  const gastosHormiga = state.gastosPersonal.filter((g) => (Number(g.monto) || 0) < umbral && (Number(g.monto) || 0) > 0);
+  const nHormiga = gastosHormiga.length;
+
+  const totalGastosPorTipo = (calc.gastosPorTipo.Necesidad || 0) + (calc.gastosPorTipo.Gusto || 0) + (calc.gastosPorTipo.Ahorro || 0) || 1;
+  const pctNec = calc.gastosPorTipo.Necesidad / totalGastosPorTipo;
+  const pctGus = calc.gastosPorTipo.Gusto / totalGastosPorTipo;
+  const pctAho = calc.gastosPorTipo.Ahorro / totalGastosPorTipo;
+
+  const nNecesidad = state.gastosPersonal.filter((g) => (CATS_PERSONAL.find((c) => c.name === g.categoria)?.tipo) === "Necesidad").length;
+  const nGusto = state.gastosPersonal.filter((g) => (CATS_PERSONAL.find((c) => c.name === g.categoria)?.tipo) === "Gusto").length;
+  const nAhorro = state.gastosPersonal.filter((g) => (CATS_PERSONAL.find((c) => c.name === g.categoria)?.tipo) === "Ahorro").length;
+
   return (
-    <div>
-      <SectionHead badge={<PrivacyBadge shared={false} />}>Personal</SectionHead>
+    <div style={{ paddingBottom: "120px" }}>
+      {/* HEADER */}
+      <div style={{ marginBottom: 28, paddingTop: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <button
+            onClick={onOpenMenu}
+            className="fin-tap"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#ffffff",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Icon name="menu" size={20} strokeWidth={1.8} />
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                background: "rgba(189,100,245,0.18)",
+                border: "1px solid rgba(189,100,245,0.25)",
+                color: "#bd64f5",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Icon name="user" size={18} strokeWidth={1.8} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 20, fontWeight: 700, color: "#ffffff", letterSpacing: -0.3 }}>
+                <span>Personal</span>
+                <Icon name="chevronDown" size={15} strokeWidth={2} color="#9ca3af" />
+              </div>
+              <div style={{ fontSize: 12.5, color: "#9ca3af", marginTop: 2 }}>Finanzas Personales</div>
+            </div>
+          </div>
+          <button
+            className="fin-tap"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#ffffff",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Icon name="bell" size={18} strokeWidth={1.8} />
+          </button>
+        </div>
+      </div>
 
-      <Hero
-        label="Ahorro neto del mes"
-        value={fmt(calc.ahorroNeto)}
-        valueColor={calc.ahorroNeto >= 0 ? C.money : C.bad}
-        sub={`Meta de ahorro: ${pct(state.config.pctAhorro)} de tus ingresos`}
-        icon="user"
-      />
+      {/* TARJETA SALDO DISPONIBLE */}
+      <div
+        style={{
+          background: "#1C1D21",
+          border: "1px solid rgba(255,255,255,0.05)",
+          borderRadius: 22,
+          padding: "22px 20px",
+          marginBottom: 28,
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 14.5, color: "#9ca3af", fontWeight: 600, letterSpacing: 0.2 }}>Saldo disponible</span>
+            <button
+              onClick={() => setVisible((v) => !v)}
+              className="fin-tap"
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: "50%",
+                background: "transparent",
+                border: "none",
+                color: "#9ca3af",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 0,
+              }}
+            >
+              <Icon name={visible ? "eye" : "eyeOff"} size={16} strokeWidth={1.8} />
+            </button>
+          </div>
+          <button
+            className="fin-tap"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#ffffff",
+              cursor: "pointer",
+              fontFamily: FONT,
+              fontSize: 13,
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 14px",
+              borderRadius: 999,
+            }}
+          >
+            <span>Este mes</span>
+            <Icon name="chevronDown" size={12} strokeWidth={2} />
+          </button>
+        </div>
 
-      <div className="fin-2col">
-        <div>
-          <GroupLabel>Seguimiento 50/30/20</GroupLabel>
-          <Card>
-            {["Necesidad", "Gusto", "Ahorro"].map((tipo, idx) => {
-              const val = calc.gastosPorTipo[tipo];
-              const meta = tipo === "Necesidad" ? calc.metaNecesidad : tipo === "Gusto" ? calc.metaGusto : calc.metaAhorro;
-              const p = meta > 0 ? val / meta : 0;
-              const estado = meta === 0 ? null : p <= 1 ? "bien" : p <= 1.15 ? "cerca" : "excedido";
-              return (
+        <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 16 }}>
+          <div
+            style={{
+              fontSize: 46,
+              fontWeight: 800,
+              letterSpacing: -1.8,
+              lineHeight: 1,
+              color: "#ffffff",
+              fontFamily: FONT,
+              fontVariantNumeric: "tabular-nums",
+              wordBreak: "break-word",
+            }}
+          >
+            {visible ? `$ ${fmt(saldoDisponible).replace("$", "").trim()}` : "$ ••••••"}
+          </div>
+        </div>
+
+        {deltaMonto !== 0 && (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "7px 16px",
+              borderRadius: 999,
+              background: "rgba(189, 100, 245, 0.15)",
+              border: "1px solid rgba(189,100,245,0.3)",
+              marginBottom: 22,
+            }}
+          >
+            <Icon
+              name={deltaUp ? "arrowUp" : "arrowDown"}
+              size={10.5}
+              strokeWidth={2.8}
+              color="#bd64f5"
+            />
+            <span
+              style={{
+                fontSize: 12.5,
+                fontWeight: 800,
+                color: "#bd64f5",
+                fontFamily: FONT,
+                letterSpacing: 0.2,
+              }}
+            >
+              {deltaUp ? "+" : "-"} {fmt(Math.abs(deltaMonto))}
+            </span>
+            <span
+              style={{
+                fontSize: 12.5,
+                fontWeight: 800,
+                color: "#bd64f5",
+                fontFamily: FONT,
+                letterSpacing: 0.2,
+              }}
+            >
+              ▲ {Math.round(deltaPct * 100) / 100}%
+            </span>
+          </div>
+        )}
+
+        {/* Ingresos vs Gastos + gráfico */}
+        <div style={{ display: "flex", alignItems: "stretch", gap: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, paddingRight: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#52D377" }} />
+              <span style={{ fontSize: 13, color: "#9ca3af", fontWeight: 600 }}>Ingresos</span>
+            </div>
+            <div
+              style={{
+                fontSize: 23,
+                fontWeight: 800,
+                color: "#ffffff",
+                fontFamily: FONT,
+                fontVariantNumeric: "tabular-nums",
+                letterSpacing: -0.5,
+                marginBottom: 4,
+              }}
+            >
+              {fmt(totalIngresos)}
+            </div>
+            <div style={{ fontSize: 12, color: "#9ca3af" }}>{nIngresos} operaciones</div>
+          </div>
+          <div
+            style={{
+              width: 1,
+              background: "rgba(255,255,255,0.06)",
+              margin: "6px 0",
+              alignSelf: "stretch",
+            }}
+          />
+          <div style={{ flex: 1, minWidth: 0, paddingLeft: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#F53222" }} />
+              <span style={{ fontSize: 13, color: "#9ca3af", fontWeight: 600 }}>Gastos</span>
+            </div>
+            <div
+              style={{
+                fontSize: 23,
+                fontWeight: 800,
+                color: "#ffffff",
+                fontFamily: FONT,
+                fontVariantNumeric: "tabular-nums",
+                letterSpacing: -0.5,
+                marginBottom: 4,
+              }}
+            >
+              {fmt(totalGastos)}
+            </div>
+            <div style={{ fontSize: 12, color: "#9ca3af" }}>{nGastos} operaciones</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", paddingLeft: 14, minWidth: 68 }}>
+            <div
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: "50%",
+                background: "rgba(189,100,245,0.15)",
+                border: "1px solid rgba(189,100,245,0.22)",
+                color: "#bd64f5",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Icon name="pieChart" size={24} strokeWidth={2.0} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* CLASIFICACIÓN DE GASTOS (50/30/20) */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 19, fontWeight: 700, color: "#ffffff", letterSpacing: -0.2 }}>Clasificación de gastos</span>
+            <div
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                color: "#9ca3af",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Icon name="help" size={11} strokeWidth={1.8} />
+            </div>
+          </div>
+          <button
+            className="fin-tap"
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#bd64f5",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              fontFamily: FONT,
+              padding: 0,
+              textDecoration: "underline",
+              textDecorationColor: "rgba(189,100,245,0.5)",
+              textUnderlineOffset: 3,
+            }}
+          >
+            Ver detalle
+          </button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+          {[
+            {
+              label: "Necesidad",
+              pct: pctNec,
+              monto: calc.gastosPorTipo.Necesidad || 0,
+              n: nNecesidad,
+              icon: "target",
+              color: "#52D377",
+              bgIcon: "rgba(82,211,119,0.14)",
+              borderIcon: "rgba(82,211,119,0.28)",
+              gradientBar: "linear-gradient(90deg, #52D377 0%, #34a85b 100%)",
+            },
+            {
+              label: "Gusto",
+              pct: pctGus,
+              monto: calc.gastosPorTipo.Gusto || 0,
+              n: nGusto,
+              icon: "sparkle",
+              color: "#bd64f5",
+              bgIcon: "rgba(189,100,245,0.14)",
+              borderIcon: "rgba(189,100,245,0.28)",
+              gradientBar: "linear-gradient(90deg, #bd64f5 0%, #9c3fe0 100%)",
+            },
+            {
+              label: "Ahorro",
+              pct: pctAho,
+              monto: calc.gastosPorTipo.Ahorro || 0,
+              n: nAhorro,
+              icon: "trophy",
+              color: "#F5A822",
+              bgIcon: "rgba(245,168,34,0.14)",
+              borderIcon: "rgba(245,168,34,0.28)",
+              gradientBar: "linear-gradient(90deg, #F5A822 0%, #D88A00 100%)",
+            },
+          ].map((c) => (
+            <div
+              key={c.label}
+              style={{
+                background: "#1C1D21",
+                border: "1px solid rgba(255,255,255,0.05)",
+                borderRadius: 20,
+                padding: "16px 14px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+                minHeight: 154,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div
-                  key={tipo}
                   style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 14,
+                    background: c.bgIcon,
+                    border: `1px solid ${c.borderIcon}`,
+                    color: c.color,
                     display: "flex",
-                    justifyContent: "space-between",
                     alignItems: "center",
-                    gap: 10,
-                    flexWrap: "wrap",
-                    padding: "11px 0",
-                    borderBottom: idx < 2 ? `1px solid ${C.divider}` : "none",
+                    justifyContent: "center",
+                    flexShrink: 0,
                   }}
                 >
-                  <span style={{ fontSize: 13.5, fontWeight: 600 }}>{tipo}</span>
-                  <span style={{ fontSize: 12, color: C.textMuted, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
-                    {fmt(val)} / {fmt(meta)}
-                  </span>
-                  {estado && <Chip estado={estado} />}
+                  <Icon name={c.icon} size={17} strokeWidth={1.9} />
                 </div>
-              );
-            })}
-          </Card>
-        </div>
-
-        <div>
-          <GroupLabel>Ingresos</GroupLabel>
-          <Card style={{ marginBottom: 22 }}>
-            <Row label="Sueldo desde Petnova" value={fmt(calc.sueldo)} />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "14px 0 8px" }}>
-              <span style={{ fontSize: 11, color: C.textFaint, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6 }}>Otros ingresos</span>
-              <Btn onClick={addOtroIngreso} variant="ghost" icon="plus" style={{ padding: "6px 12px", fontSize: 11.5 }}>Agregar</Btn>
-            </div>
-            {state.ingresosPersonalOtros.map((i, idx) => (
-              <TxRow
-                key={i.id}
-                icon="arrowUp"
-                iconColor={C.money}
-                last={idx === state.ingresosPersonalOtros.length - 1}
-                onDelete={() => delOtroIngreso(i.id)}
-                primary={<Field placeholder="Concepto" value={i.concepto} onChange={(v) => updOtroIngreso(i.id, { concepto: v })} style={txPrimaryStyle} />}
-                meta={<span style={{ fontSize: 11, color: C.textFaint }}>Otro ingreso</span>}
-                amount={<Field type="number" placeholder="Monto" value={i.monto} onChange={(v) => updOtroIngreso(i.id, { monto: v })} style={txAmountStyle} />}
-                amountColor={C.money}
-              />
-            ))}
-            <Row label="Total ingresos" value={fmt(calc.totalIngresosPersonal)} bold color={C.money} last />
-          </Card>
-
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <GroupLabel style={{ marginBottom: 0 }}>Gastos personales</GroupLabel>
-            <Btn onClick={addGasto} variant="ghost" icon="plus">Gasto</Btn>
-          </div>
-          <Card style={{ marginBottom: 22 }}>
-            {state.gastosPersonal.length === 0 && <EmptyState text="Sin gastos registrados este mes." icon="x" />}
-            {state.gastosPersonal.map((g, idx) => {
-              const esHormiga = (Number(g.monto) || 0) > 0 && (Number(g.monto) || 0) < umbral;
-              return (
-                <TxRow
-                  key={g.id}
-                  icon={esHormiga ? "ant" : CATEGORY_ICONS[g.categoria] || "arrowDown"}
-                  iconColor={esHormiga ? C.brand : C.bad}
-                  last={idx === state.gastosPersonal.length - 1}
-                  onDelete={() => delGasto(g.id)}
-                  primary={<Field placeholder="Concepto" value={g.concepto} onChange={(v) => updGasto(g.id, { concepto: v })} style={txPrimaryStyle} />}
-                  meta={
-                    <>
-                      <Field type="date" value={g.fecha} onChange={(v) => updGasto(g.id, { fecha: v })} style={{ ...txMetaStyle, width: 108 }} />
-                      <span style={{ color: C.textFaint }}>·</span>
-                      <Dropdown value={g.categoria} onChange={(v) => updGasto(g.id, { categoria: v })} options={CATS_PERSONAL.map((c) => c.name)} style={{ ...txMetaStyle, width: 150 }} />
-                    </>
-                  }
-                  amount={<Field type="number" placeholder="Monto" value={g.monto} onChange={(v) => updGasto(g.id, { monto: v })} style={txAmountStyle} />}
-                  amountColor={esHormiga ? C.brand : C.bad}
+                <div style={{ lineHeight: 1.15, flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, color: "#ffffff", fontWeight: 700 }}>{c.label}</div>
+                  <div style={{ fontSize: 15.5, color: c.color, fontWeight: 800, marginTop: 3, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
+                    {Math.round(c.pct * 100)}%
+                  </div>
+                </div>
+              </div>
+              <div
+                style={{
+                  fontSize: 18,
+                  fontWeight: 800,
+                  color: "#ffffff",
+                  fontFamily: FONT,
+                  fontVariantNumeric: "tabular-nums",
+                  letterSpacing: -0.2,
+                  lineHeight: 1.1,
+                }}
+              >
+                {fmt(c.monto)}
+              </div>
+              <div style={{ fontSize: 11.5, color: "#9ca3af", fontWeight: 600, marginBottom: 2 }}>
+                {c.n} operaciones
+              </div>
+              <div
+                style={{
+                  height: 8,
+                  borderRadius: 999,
+                  background: "rgba(255,255,255,0.05)",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    width: `${Math.min(100, Math.max(0, c.pct * 100))}%`,
+                    height: "100%",
+                    background: c.gradientBar,
+                    borderRadius: 999,
+                  }}
                 />
-              );
-            })}
-            <Row label="Total gastos" value={fmt(calc.totalGastosPersonal)} bold color={C.bad} />
-            <Row label="Gasto hormiga del mes" value={fmt(calc.gastoHormiga)} last />
-          </Card>
+              </div>
+            </div>
+          ))}
         </div>
+      </div>
+
+      {/* GASTO HORMIGA DETECTADO */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 19, fontWeight: 700, color: "#ffffff", letterSpacing: -0.2 }}>Gasto Hormiga detectado</span>
+            <div
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                color: "#9ca3af",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Icon name="help" size={11} strokeWidth={1.8} />
+            </div>
+          </div>
+          <button
+            className="fin-tap"
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#bd64f5",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              fontFamily: FONT,
+              padding: 0,
+              textDecoration: "underline",
+              textDecorationColor: "rgba(189,100,245,0.5)",
+              textUnderlineOffset: 3,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Umbral: {fmt(umbral)}/día
+          </button>
+        </div>
+
+        <div
+          style={{
+            background: "#1C1D21",
+            border: "1px solid rgba(255,255,255,0.05)",
+            borderRadius: 22,
+            padding: "16px 18px",
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+          }}
+        >
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 14,
+              background: "rgba(245,50,34,0.12)",
+              border: "1px solid rgba(245,50,34,0.22)",
+              color: "#F53222",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Icon name="ant" size={22} strokeWidth={1.8} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0, lineHeight: 1.25 }}>
+            <div style={{ fontSize: 15.5, fontWeight: 700, color: "#ffffff", marginBottom: 4 }}>
+              Has gastado <span style={{ color: "#F53222" }}>{fmt(gastoHormiga)}</span> en gastos hormiga
+            </div>
+            <div style={{ fontSize: 12.5, color: "#9ca3af" }}>
+              Este mes en {nHormiga} operaciones
+            </div>
+          </div>
+          <button
+            className="fin-tap"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#ffffff",
+              cursor: "pointer",
+              fontFamily: FONT,
+              fontSize: 13,
+              fontWeight: 700,
+              display: "flex",
+              alignItems: "center",
+              padding: "10px 16px",
+              borderRadius: 999,
+              flexShrink: 0,
+            }}
+          >
+            Ver análisis
+          </button>
+        </div>
+      </div>
+
+      {/* ACTIVIDAD RECIENTE */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div style={{ fontSize: 19, fontWeight: 700, color: "#ffffff", letterSpacing: -0.2 }}>Actividad reciente</div>
+          <button
+            className="fin-tap"
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#bd64f5",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              fontFamily: FONT,
+              padding: 0,
+              textDecoration: "underline",
+              textDecorationColor: "rgba(189,100,245,0.5)",
+              textUnderlineOffset: 3,
+            }}
+          >
+            Ver todas
+          </button>
+        </div>
+
+        <div
+          style={{
+            background: "#1C1D21",
+            border: "1px solid rgba(255,255,255,0.05)",
+            borderRadius: 22,
+            padding: "10px 14px",
+          }}
+        >
+          {(state.ingresosPersonalOtros.length === 0 && state.gastosPersonal.length === 0) && (
+            <div style={{ padding: "20px 4px", textAlign: "center" }}>
+              <EmptyState text="No hay actividad personal registrada todavía." icon="user" />
+            </div>
+          )}
+
+          {state.ingresosPersonalOtros.length > 0 && (
+            <div style={{ borderBottom: `1px solid rgba(255,255,255,0.05)` }}>
+              <GroupLabel style={{ marginTop: 12, marginBottom: 8 }}>Otros ingresos</GroupLabel>
+              {state.ingresosPersonalOtros.map((i, idx) => (
+                <TxRow
+                  key={i.id}
+                  icon="arrowDown"
+                  iconColor="#52D377"
+                  last={idx === state.ingresosPersonalOtros.length - 1 && state.gastosPersonal.length === 0}
+                  onDelete={() => delOtroIngreso(i.id)}
+                  primary={<Field placeholder="Concepto (ej: Sueldo Freelance)" value={i.concepto} onChange={(v) => updOtroIngreso(i.id, { concepto: v })} style={txPrimaryStyle} />}
+                  meta={<span style={{ fontSize: 11, color: "#52D377", fontWeight: 700 }}>Ingreso · Otro</span>}
+                  amount={
+                    <div style={{ textAlign: "right", lineHeight: 1.2 }}>
+                      <div
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 800,
+                          color: "#52D377",
+                          fontFamily: FONT,
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        + {fmt(Number(i.monto) || 0)}
+                      </div>
+                      <div style={{ marginTop: 2, display: "flex", justifyContent: "flex-end" }}>
+                        <Field type="number" placeholder="Monto" value={i.monto} onChange={(v) => updOtroIngreso(i.id, { monto: v })} style={{ ...txAmountStyle, width: 110 }} />
+                      </div>
+                    </div>
+                  }
+                  amountColor="#52D377"
+                />
+              ))}
+            </div>
+          )}
+
+          {state.gastosPersonal.length > 0 && (
+            <div>
+              <GroupLabel style={{ marginTop: 12, marginBottom: 8 }}>Gastos personales</GroupLabel>
+              {state.gastosPersonal.map((g, idx) => {
+                const esHormiga = (Number(g.monto) || 0) > 0 && (Number(g.monto) || 0) < umbral;
+                const cat = CATS_PERSONAL.find((c) => c.name === g.categoria);
+                const tipo = cat?.tipo || "Gusto";
+                const colorGasto = esHormiga ? "#bd64f5" : "#F53222";
+                const iconGasto = esHormiga ? "ant" : CATEGORY_ICONS[g.categoria] || "arrowUp";
+                const tipoColor =
+                  tipo === "Necesidad" ? "#52D377" : tipo === "Ahorro" ? "#F5A822" : "#bd64f5";
+                return (
+                  <TxRow
+                    key={g.id}
+                    icon={iconGasto}
+                    iconColor={colorGasto}
+                    last={idx === state.gastosPersonal.length - 1}
+                    onDelete={() => delGasto(g.id)}
+                    primary={<Field placeholder="Concepto (ej: Café en la esquina)" value={g.concepto} onChange={(v) => updGasto(g.id, { concepto: v })} style={txPrimaryStyle} />}
+                    meta={
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 11, color: tipoColor, fontWeight: 700 }}>
+                          {esHormiga ? "Gasto Hormiga" : tipo}
+                        </span>
+                        <span style={{ fontSize: 10.5, color: "#4B4B4B" }}>·</span>
+                        <Field type="date" value={g.fecha} onChange={(v) => updGasto(g.id, { fecha: v })} style={{ ...txMetaStyle, width: "auto", padding: "2px 0" }} />
+                        <span style={{ fontSize: 10.5, color: "#4B4B4B" }}>·</span>
+                        <Dropdown value={g.categoria} onChange={(v) => updGasto(g.id, { categoria: v })} options={CATS_PERSONAL.map((c) => c.name)} style={{ ...txMetaStyle, flex: 1, minWidth: 100 }} />
+                        {esHormiga && (
+                          <span
+                            style={{
+                              fontSize: 10.5,
+                              fontWeight: 800,
+                              color: "#F53222",
+                              background: "rgba(245,50,34,0.12)",
+                              border: "1px solid rgba(245,50,34,0.3)",
+                              padding: "2px 8px",
+                              borderRadius: 8,
+                              letterSpacing: 0.3,
+                            }}
+                          >
+                            Hormiga
+                          </span>
+                        )}
+                      </div>
+                    }
+                    amount={
+                      <div style={{ textAlign: "right", lineHeight: 1.2 }}>
+                        <div
+                          style={{
+                            fontSize: 15,
+                            fontWeight: 800,
+                            color: colorGasto,
+                            fontFamily: FONT,
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          - {fmt(Number(g.monto) || 0)}
+                        </div>
+                        <div style={{ marginTop: 2, display: "flex", justifyContent: "flex-end" }}>
+                          <Field type="number" placeholder="Monto" value={g.monto} onChange={(v) => updGasto(g.id, { monto: v })} style={{ ...txAmountStyle, width: 110 }} />
+                        </div>
+                      </div>
+                    }
+                    amountColor={colorGasto}
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          {/* Totales */}
+          {(state.ingresosPersonalOtros.length > 0 || state.gastosPersonal.length > 0) && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 20,
+                marginTop: 16,
+                paddingTop: 14,
+                borderTop: `1px solid rgba(255,255,255,0.05)`,
+                fontSize: 12,
+                fontFamily: FONT,
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              <div style={{ textAlign: "left" }}>
+                <div style={{ color: "#9ca3af", fontWeight: 500, marginBottom: 4 }}>
+                  Ingresos (incluye sueldo Petnova)
+                </div>
+                <div style={{ color: "#52D377", fontWeight: 800, fontSize: 14 }}>
+                  {fmt(calc.totalIngresosPersonal)}
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ color: "#9ca3af", fontWeight: 500, marginBottom: 4 }}>
+                  Gastos · Hormiga {fmt(calc.gastoHormiga)}
+                </div>
+                <div style={{ color: "#F53222", fontWeight: 800, fontSize: 14 }}>
+                  {fmt(calc.totalGastosPersonal)}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ANÁLISIS DE GASTOS HORMIGA */}
+      <div style={{ marginBottom: 22 }}>
+        <button
+          onClick={() => {}}
+          className="fin-tap"
+          style={{
+            width: "100%",
+            background: "rgba(189,100,245,0.08)",
+            border: "1px solid rgba(189,100,245,0.22)",
+            borderRadius: 22,
+            padding: "16px 18px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            fontFamily: FONT,
+            textAlign: "left",
+          }}
+        >
+          <div
+            style={{
+              width: 46,
+              height: 46,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #bd64f5 0%, #9c3fe0 100%)",
+              color: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Icon name="ant" size={20} strokeWidth={1.8} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0, lineHeight: 1.2 }}>
+            <div style={{ fontSize: 16.5, fontWeight: 700, color: "#bd64f5", marginBottom: 4 }}>Análisis de Gastos Hormiga</div>
+            <div style={{ fontSize: 12.5, color: "#9ca3af" }}>Descubre en qué se va tu dinero</div>
+          </div>
+          <div style={{ color: "#bd64f5", display: "flex", alignItems: "center" }}>
+            <Icon name="chevronRight" size={20} strokeWidth={2.0} />
+          </div>
+        </button>
+      </div>
+
+      {/* BOTONES ACCIÓN RÁPIDA INFERIORES */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <button
+          onClick={addOtroIngreso}
+          className="fin-tap"
+          style={{
+            background: "#1C1D21",
+            border: "1px solid rgba(255,255,255,0.05)",
+            borderRadius: 22,
+            padding: "14px 16px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            fontFamily: FONT,
+            color: "#ffffff",
+            gap: 10,
+          }}
+        >
+          <div style={{ fontSize: 15.5, fontWeight: 700, color: "#ffffff", display: "flex", alignItems: "center", gap: 8 }}>
+            <Icon name="plus" size={17} strokeWidth={2.2} />
+            Ingreso
+          </div>
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #bd64f5 0%, #9c3fe0 100%)",
+              color: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Icon name="arrowDown" size={17} strokeWidth={2.0} />
+          </div>
+        </button>
+        <button
+          onClick={addGasto}
+          className="fin-tap"
+          style={{
+            background: "#1C1D21",
+            border: "1px solid rgba(255,255,255,0.05)",
+            borderRadius: 22,
+            padding: "14px 16px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            fontFamily: FONT,
+            color: "#ffffff",
+            gap: 10,
+          }}
+        >
+          <div style={{ fontSize: 15.5, fontWeight: 700, color: "#ffffff", display: "flex", alignItems: "center", gap: 8 }}>
+            <Icon name="plus" size={17} strokeWidth={2.2} />
+            Gasto
+          </div>
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #bd64f5 0%, #9c3fe0 100%)",
+              color: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Icon name="arrowUp" size={17} strokeWidth={2.0} />
+          </div>
+        </button>
       </div>
     </div>
   );
