@@ -6,7 +6,7 @@ import { supabase } from "./supabaseClient";
    Cada color, gradiente y token coincide 1:1 con Figma/PDF
    ============================================================ */
 const C = {
-  bg: "#101212",
+  bg: "#0f0f11",
   card: "#1C1D21",
   cardAlt: "#1C1D21",
   cardHover: "#26282C",
@@ -14,14 +14,14 @@ const C = {
   borderStrong: "rgba(75, 75, 75, 0.7)",
   divider: "rgba(75, 75, 75, 0.35)",
   text: "#FAFAFA",
-  textMuted: "#8C8C8C",
+  textMuted: "#9ca3af",
   textFaint: "#4B4B4B",
-  brand: "#97DC22",
-  brandDk: "#7EC20A",
-  brandGradient: "linear-gradient(135deg, #96DF33 0%, #7EC20A 100%)",
+  brand: "#bd64f5",
+  brandDk: "#9c3fe0",
+  brandGradient: "linear-gradient(135deg, #bd64f5 0%, #9c3fe0 100%)",
   brandOn: "#0E1100",
-  brandBg: "rgba(151, 220, 34, 0.12)",
-  brandBorder: "rgba(151, 220, 34, 0.35)",
+  brandBg: "rgba(189, 100, 245, 0.14)",
+  brandBorder: "rgba(189, 100, 245, 0.38)",
   warn: "#FA9A3A",
   warnBg: "rgba(250, 154, 58, 0.12)",
   warnBorder: "rgba(250, 154, 58, 0.35)",
@@ -1597,151 +1597,7 @@ function AppInner({ user }) {
         }
       `}</style>
 
-      <div className="fin-container" style={{ padding: "8px 20px 0 20px", position: "relative" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 24 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                background: C.brand,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 16,
-                fontWeight: 900,
-                fontFamily: FONT,
-                color: C.brandOn,
-              }}
-            >
-              $
-            </div>
-            <div>
-              <div style={{ fontSize: 15.5, fontWeight: 800, letterSpacing: -0.2, fontFamily: FONT }}>Sistema Financiero</div>
-              <div style={{ fontSize: 11, color: C.textFaint, marginTop: 1, fontWeight: 500 }}>Petnova + Personal</div>
-            </div>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div
-              style={{
-                fontSize: 10.5,
-                color: saving ? C.brand : C.textFaint,
-                fontWeight: 700,
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
-              <div
-                style={{
-                  width: 5,
-                  height: 5,
-                  borderRadius: "50%",
-                  background: saving ? C.brand : C.money,
-                  animation: saving ? "pulse 1s ease infinite" : "none",
-                }}
-              />
-              <style>{`@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }`}</style>
-              {saving ? "Guardando" : "Guardado"}
-            </div>
-            <button
-              onClick={() => setShowTutorial(true)}
-              title="Ver tutorial"
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: "50%",
-                background: "transparent",
-                border: `1px solid ${C.border}`,
-                color: C.textFaint,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-              }}
-            >
-              <Icon name="help" size={14} strokeWidth={1.8} />
-            </button>
-            <button
-              onClick={() => supabase.auth.signOut()}
-              title="Cerrar sesión"
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: "50%",
-                background: "transparent",
-                border: `1px solid ${C.border}`,
-                color: C.textFaint,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-              }}
-            >
-              <Icon name="logout" size={14} strokeWidth={1.8} />
-            </button>
-          </div>
-        </div>
-
-        <div className="fin-toptabs" style={{ position: "relative" }}>
-          <div
-            style={{
-              display: "flex",
-              gap: 2,
-              overflowX: "auto",
-              paddingBottom: 2,
-              paddingRight: 28,
-              scrollbarWidth: "none",
-              borderBottom: `1px solid ${C.divider}`,
-            }}
-          >
-            {TABS.map((t) => {
-              const active = tab === t.id;
-              return (
-                <button
-                  key={t.id}
-                  ref={(el) => (tabBtnRefs.current[t.id] = el)}
-                  onClick={() => goToIndex(TABS.findIndex((x) => x.id === t.id))}
-                  style={{
-                    background: "transparent",
-                    color: active ? C.text : C.textFaint,
-                    border: "none",
-                    borderBottom: active ? `2px solid ${C.brand}` : "2px solid transparent",
-                    marginBottom: -1,
-                    padding: "8px 14px 10px",
-                    fontSize: 12.5,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                    flexShrink: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    transition: "color 0.15s ease, border-color 0.15s ease",
-                    fontFamily: FONT,
-                  }}
-                >
-                  <Icon name={t.icon} size={13} strokeWidth={active ? 2.4 : 1.8} />
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              top: 0,
-              right: 0,
-              bottom: 2,
-              width: 30,
-              background: `linear-gradient(90deg, transparent, ${C.bg}CC)`,
-              pointerEvents: "none",
-            }}
-          />
-        </div>
-      </div>
+      <div className="fin-container" style={{ padding: "0px 20px 0 20px", position: "relative" }}>
 
       <div
         className="fin-container fin-swipe-area"
@@ -1759,7 +1615,7 @@ function AppInner({ user }) {
           }}
         >
           <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
-            <Dashboard state={state} calc={calc} onNavigate={goToTab} />
+            <Dashboard state={state} calc={calc} onNavigate={goToTab} onOpenMenu={() => setMenuOpen(true)} userName={user.user_metadata?.name || user.email?.split('@')[0] || 'Usuario'} onShowTutorial={() => setShowTutorial(true)} onSignOut={() => supabase.auth.signOut()} saving={saving} />
           </div>
           <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
             <Petnova state={state} update={update} calc={calc} />
@@ -1803,63 +1659,32 @@ function AppInner({ user }) {
         className="fin-bottom-nav"
         style={{
           position: "fixed",
-          bottom: 16,
+          bottom: 20,
           left: "50%",
           transform: "translateX(-50%)",
-          width: "90%",
-          maxWidth: 400,
-          backgroundColor: "#1a1d21",
-          borderRadius: 28,
-          zIndex: 50,
           display: "flex",
-          justifyContent: "space-around",
           alignItems: "center",
-          padding: "12px 0",
-          boxShadow: "none",
-          WebkitMaskImage: "none",
-          maskImage: "none",
-          overflow: "visible",
-          border: "none",
-          minHeight: 0,
+          justifyContent: "space-around",
+          background: "rgba(25, 25, 28, 0.75)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          borderRadius: 40,
+          height: 64,
+          width: "85%",
+          maxWidth: 400,
+          zIndex: 999,
+          padding: "0 8px",
+          boxSizing: "border-box",
         }}
       >
-        <button
-          onClick={() => {
-            setMenuOpen(false);
-            goToTab("personal");
-          }}
-          className="fin-navbtn"
-          title="Transacciones"
-          aria-label="Nuevo movimiento"
-          style={{
-            position: "absolute",
-            top: -20,
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: 56,
-            height: 56,
-            borderRadius: "50%",
-            backgroundColor: "#a3e635",
-            zIndex: 51,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            border: "none",
-            cursor: "pointer",
-            color: "#000000",
-            boxShadow: `0 14px 32px -8px rgba(163,230,53,0.75)`,
-            flexShrink: 0,
-          }}
-        >
-          <Icon name="transfer" size={22} strokeWidth={2.0} color="#000000" />
-        </button>
-
-        {bottomNavTabs.filter(t => t.id !== "personal").map((t, i) => {
+        {bottomNavTabs.map((t) => {
           const active = tab === t.id && !menuOpen;
           const specificIcon =
             t.id === "dashboard" ? "homePentagon" :
             t.id === "petnova" ? "marketSwap" :
             t.id === "presupuesto" ? "pieChart" :
+            t.id === "personal" ? "user" :
             t.icon;
           return (
             <button
@@ -1875,47 +1700,43 @@ function AppInner({ user }) {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 3,
-                padding: "4px 4px 2px",
-                color: active ? C.brand : C.textMuted,
+                justifyContent: "center",
+                gap: 2,
+                padding: 0,
                 cursor: "pointer",
                 fontFamily: FONT,
-                transition: "color 0.15s ease",
-                borderRadius: 14,
-                zIndex: 2,
+                transition: "all 0.2s ease",
+                borderRadius: 999,
                 flex: 1,
-                maxWidth: "22%",
+                maxWidth: "25%",
+                height: 52,
+                position: "relative",
               }}
             >
-              <Icon name={specificIcon} size={22} strokeWidth={active ? 2.2 : 1.8} />
-              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.1 }}>{t.label}</span>
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  background: active ? "#bd64f5" : "transparent",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "background 0.2s ease",
+                }}
+              >
+                <Icon
+                  name={specificIcon}
+                  size={20}
+                  strokeWidth={active ? 2.2 : 1.8}
+                  color={active ? "#ffffff" : "#9ca3af"}
+                />
+              </div>
             </button>
           );
         })}
-        <button
-          onClick={() => setMenuOpen(true)}
-          className="fin-navbtn"
-          style={{
-            background: "transparent",
-            border: "none",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 3,
-            padding: "4px 4px 2px",
-            color: menuOpen || menuActive ? C.brand : C.textMuted,
-            cursor: "pointer",
-            fontFamily: FONT,
-            transition: "color 0.15s ease",
-            borderRadius: 14,
-            zIndex: 2,
-            flex: 1,
-            maxWidth: "22%",
-          }}
-        >
-          <Icon name="menu" size={22} strokeWidth={menuOpen || menuActive ? 2.6 : 2.0} />
-          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.1 }}>Menú</span>
-        </button>
+      </div>
+
       </div>
 
       {menuOpen && (
@@ -1980,8 +1801,8 @@ function AppInner({ user }) {
                       width: 38,
                       height: 38,
                       borderRadius: "50%",
-                      background: active ? C.brandBg : C.cardAlt,
-                      color: active ? C.brand : C.textMuted,
+                      background: active ? "rgba(189,100,245,0.18)" : C.cardAlt,
+                      color: active ? "#bd64f5" : C.textMuted,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -1990,11 +1811,83 @@ function AppInner({ user }) {
                   >
                     <Icon name={t.icon} size={17} strokeWidth={1.9} />
                   </div>
-                  <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600, color: active ? C.brand : C.text }}>{t.label}</span>
+                  <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600, color: active ? "#bd64f5" : C.text }}>{t.label}</span>
                   <Icon name="chevronRight" size={16} strokeWidth={2} color={C.textFaint} />
                 </button>
               );
             })}
+            <div style={{ margin: "10px 0", height: 1, background: C.divider }} />
+            <button
+              onClick={() => {
+                setShowTutorial(true);
+                setMenuOpen(false);
+              }}
+              className="fin-tap fin-sheetitem"
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: 13,
+                padding: "13px 10px",
+                background: "transparent",
+                border: "none",
+                borderRadius: 14,
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              <div
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: "50%",
+                  background: C.cardAlt,
+                  color: C.textMuted,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <Icon name="help" size={17} strokeWidth={1.9} />
+              </div>
+              <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600, color: C.text }}>Ver tutorial</span>
+              <Icon name="chevronRight" size={16} strokeWidth={2} color={C.textFaint} />
+            </button>
+            <button
+              onClick={() => supabase.auth.signOut()}
+              className="fin-tap fin-sheetitem"
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: 13,
+                padding: "13px 10px",
+                background: "transparent",
+                border: "none",
+                borderRadius: 14,
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              <div
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: "50%",
+                  background: C.badBg,
+                  color: C.bad,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <Icon name="logout" size={17} strokeWidth={1.9} />
+              </div>
+              <span style={{ flex: 1, fontSize: 14.5, fontWeight: 600, color: C.bad }}>Cerrar Sesión</span>
+              <Icon name="chevronRight" size={16} strokeWidth={2} color={C.textFaint} />
+            </button>
           </div>
         </div>
       )}
@@ -2015,7 +1908,7 @@ function AppInner({ user }) {
 /* ============================================================
    DASHBOARD
    ============================================================ */
-function Dashboard({ state, calc, onNavigate }) {
+function Dashboard({ state, calc, onNavigate, onOpenMenu, userName, onShowTutorial, onSignOut, saving }) {
   const ahorroColor = calc.ahorroNeto >= 0 ? C.money : C.bad;
   const ahorroPct = calc.totalIngresosPersonal > 0 ? (calc.ahorroNeto / calc.totalIngresosPersonal) * 100 : 0;
   const pctSign = ahorroPct >= 0 ? "+" : "";
@@ -2055,280 +1948,434 @@ function Dashboard({ state, calc, onNavigate }) {
     },
   ];
 
-  return (
-    <div>
-      <HeroWalletCard
-        walletLabel="Dashboard · Ahorro del mes"
-        value={fmt(calc.ahorroNeto)}
-        valueColor={ahorroColor}
-        percentValue={ahorroPct !== 0 ? `${pctSign}${Math.round(ahorroPct * 10) / 10}%` : null}
-        percentLabel="vs ingresos"
-        percentUp={calc.ahorroNeto >= 0}
-        onAddGasto={() => onNavigate("personal")}
-        onAddIngreso={() => onNavigate("personal")}
-        onCerrarMes={() => onNavigate("historial")}
-      />
+  const [visible, setVisible] = useState(true);
+  const percentUp = calc.ahorroNeto >= 0;
+  const percentValue = ahorroPct !== 0 ? `${pctSign}${Math.round(ahorroPct * 10) / 10}%` : null;
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 24 }}>
-        {statCards.map((s) => (
+  return (
+    <div style={{ paddingBottom: "120px" }}>
+      {/* 1. HERO SECTION — Saldo total centrado */}
+      <div style={{ textAlign: "center", marginBottom: 32, paddingTop: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
           <button
-            key={s.label}
-            onClick={s.onClick}
+            onClick={onOpenMenu}
             className="fin-tap"
             style={{
-              background: C.card,
-              border: `1px solid ${C.border}`,
-              borderRadius: 20,
-              padding: "16px 14px",
-              textAlign: "left",
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#ffffff",
               cursor: "pointer",
-              fontFamily: FONT,
-              boxShadow: "0 1px 2px rgba(0,0,0,0.3)",
-              transition: "border-color 0.2s ease, transform 0.15s ease",
               display: "flex",
-              flexDirection: "column",
-              gap: 10,
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-              <div
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 12,
-                  background: `${s.accent}18`,
-                  border: `1px solid ${s.accent}40`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: s.accent,
-                  flexShrink: 0,
-                }}
-              >
-                <Icon name={s.icon} size={16} strokeWidth={1.8} />
-              </div>
-              <div style={{ fontSize: 10.5, color: C.textFaint, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, lineHeight: 1.2 }}>
-                {s.label}
-              </div>
+            <Icon name="menu" size={20} strokeWidth={1.8} />
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 20, fontWeight: 700, color: "#ffffff", letterSpacing: -0.3 }}>
+            <span>Wallet de {userName}</span>
+            <Icon name="chevronDown" size={16} strokeWidth={2} color="#9ca3af" />
+          </div>
+          <button
+            className="fin-tap"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#ffffff",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Icon name="bell" size={18} strokeWidth={1.8} />
+          </button>
+        </div>
+
+        <div style={{ fontSize: 13, color: "#9ca3af", fontWeight: 600, letterSpacing: 0.5, marginBottom: 12 }}>
+          Saldo Total
+        </div>
+
+        <div
+          style={{
+            fontSize: 52,
+            fontWeight: 800,
+            letterSpacing: -2,
+            lineHeight: 1,
+            color: "#ffffff",
+            fontFamily: FONT,
+            fontVariantNumeric: "tabular-nums",
+            wordBreak: "break-word",
+            marginBottom: 16,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+          }}
+        >
+          <span>{visible ? fmt(calc.ahorroNeto) : "$ ••••••"}</span>
+          <button
+            onClick={() => setVisible((v) => !v)}
+            title={visible ? "Ocultar monto" : "Mostrar monto"}
+            className="fin-tap"
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.04)",
+              border: "none",
+              color: "#9ca3af",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 0,
+              flexShrink: 0,
+            }}
+          >
+            <Icon name={visible ? "eye" : "eyeOff"} size={14} strokeWidth={1.8} />
+          </button>
+        </div>
+
+        {percentValue && (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 18px",
+              borderRadius: 999,
+              background: percentUp
+                ? "rgba(189, 100, 245, 0.15)"
+                : "rgba(245, 50, 34, 0.15)",
+              border: `1px solid ${percentUp ? "rgba(189,100,245,0.3)" : "rgba(245,50,34,0.3)"}`,
+            }}
+          >
+            <Icon
+              name={percentUp ? "arrowUp" : "arrowDown"}
+              size={11}
+              strokeWidth={2.8}
+              color={percentUp ? "#bd64f5" : "#F53222"}
+            />
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 800,
+                color: percentUp ? "#bd64f5" : "#F53222",
+                fontFamily: FONT,
+                letterSpacing: 0.2,
+              }}
+            >
+              {percentValue}
+            </span>
+            <span style={{ fontSize: 11.5, color: "#9ca3af", marginLeft: 2 }}>vs ingresos</span>
+          </div>
+        )}
+      </div>
+
+      {/* 2. BOTONES DE ACCIÓN RÁPIDA */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "flex-start",
+          gap: 32,
+          marginBottom: 36,
+          padding: "0 10px",
+        }}
+      >
+        {[
+          { label: "Gasto", icon: "arrowDown", onClick: () => onNavigate("personal"), color: "#ffffff" },
+          { label: "Ingreso", icon: "arrowUp", onClick: () => onNavigate("personal"), color: "#ffffff" },
+          { label: "Cerrar Mes", icon: "swapHoriz", onClick: () => onNavigate("historial"), color: "#ffffff" },
+        ].map((it) => (
+          <button
+            key={it.label}
+            onClick={it.onClick}
+            className="fin-tap"
+            style={{
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 10,
+              minWidth: 64,
+              fontFamily: FONT,
+              padding: 0,
+            }}
+          >
+            <div
+              style={{
+                width: 50,
+                height: 50,
+                borderRadius: "50%",
+                background: "#222222",
+                border: "1px solid rgba(255,255,255,0.06)",
+                color: it.color,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "transform 0.15s ease",
+              }}
+            >
+              <Icon name={it.icon} size={20} strokeWidth={2.0} />
             </div>
-            <div>
-              <div
-                style={{
-                  fontSize: 20,
-                  fontWeight: 800,
-                  color: s.accent,
-                  fontFamily: FONT,
-                  fontVariantNumeric: "tabular-nums",
-                  letterSpacing: -0.3,
-                  lineHeight: 1.1,
-                  marginBottom: 3,
-                }}
-              >
-                {s.value}
-              </div>
-              <div style={{ fontSize: 11, color: C.textMuted, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
-                {s.sub}
-              </div>
-            </div>
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: "#9ca3af", letterSpacing: 0.2 }}>{it.label}</span>
           </button>
         ))}
       </div>
 
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                background: C.brand,
-                boxShadow: `0 0 6px ${C.brand}`,
-              }}
-            />
-            <GroupLabel style={{ marginBottom: 0 }}>Distribución 50 / 30 / 20</GroupLabel>
+      {/* 3. SECCIÓN YOUR ASSETS */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ fontSize: 20, fontWeight: 700, color: "#ffffff", letterSpacing: -0.3 }}>
+            Your Assets
           </div>
-          <Btn variant="text" onClick={() => onNavigate("presupuesto")}>Ver todo</Btn>
+          <button
+            onClick={() => onNavigate("presupuesto")}
+            className="fin-tap"
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#bd64f5",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              fontFamily: FONT,
+              padding: 0,
+            }}
+          >
+            See All
+          </button>
         </div>
-        <Card>
-          {["Necesidad", "Gusto", "Ahorro"].map((tipo, idx) => {
-            const val = calc.gastosPorTipo[tipo];
-            const meta = tipo === "Necesidad" ? calc.metaNecesidad : tipo === "Gusto" ? calc.metaGusto : calc.metaAhorro;
-            const p = meta > 0 ? val / meta : 0;
-            const color = p > 1 ? C.bad : p > 0.85 ? C.brand : C.money;
-            const icon = tipo === "Necesidad" ? "home" : tipo === "Gusto" ? "sparkle" : "target";
-            const pctOf = tipo === "Necesidad" ? state.config.pctNecesidad : tipo === "Gusto" ? state.config.pctGusto : state.config.pctAhorro;
-            return (
-              <div key={tipo} style={{ marginBottom: idx < 2 ? 18 : 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
+          {statCards.map((s) => (
+            <button
+              key={s.label}
+              onClick={s.onClick}
+              className="fin-tap"
+              style={{
+                background: "#1c1c1e",
+                border: "1px solid rgba(255,255,255,0.05)",
+                borderRadius: 16,
+                padding: "18px 16px",
+                textAlign: "left",
+                cursor: "pointer",
+                fontFamily: FONT,
+                transition: "transform 0.15s ease",
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+                minHeight: 120,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div
                     style={{
                       width: 32,
                       height: 32,
-                      borderRadius: 10,
-                      background: `${color}18`,
-                      border: `1px solid ${color}35`,
+                      borderRadius: "50%",
+                      background: `${s.accent}22`,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      color,
+                      color: s.accent,
                       flexShrink: 0,
                     }}
                   >
-                    <Icon name={icon} size={15} strokeWidth={1.8} />
+                    <Icon name={s.icon} size={15} strokeWidth={2} />
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
-                      <span style={{ fontSize: 13.5, color: C.text, fontWeight: 700 }}>{tipo}</span>
-                      <span style={{ fontSize: 10.5, color: C.textFaint, fontWeight: 700, letterSpacing: 0.3 }}>
-                        {pct(pctOf)} ideal
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 12, color: C.textMuted, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
-                      {fmt(val)} <span style={{ color: C.textFaint }}>·</span> <span style={{ color: C.textFaint }}>meta {fmt(meta)}</span>
-                    </div>
+                  <div style={{ fontSize: 13.5, color: "#ffffff", fontWeight: 700, lineHeight: 1.2 }}>
+                    {s.label.split(" · ")[0]}
                   </div>
                 </div>
-                <div style={{ paddingLeft: 42 }}>
-                  <Meter pctValue={p} color={color} height={7} />
+                <Icon name="chevronRight" size={14} strokeWidth={2} color="#4B4B4B" />
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontSize: 20,
+                    fontWeight: 800,
+                    color: "#ffffff",
+                    fontFamily: FONT,
+                    fontVariantNumeric: "tabular-nums",
+                    letterSpacing: -0.3,
+                    lineHeight: 1.1,
+                    marginBottom: 4,
+                  }}
+                >
+                  {s.value}
+                </div>
+                <div style={{ fontSize: 11, color: "#9ca3af", fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
+                  {s.sub}
                 </div>
               </div>
-            );
-          })}
-        </Card>
+            </button>
+          ))}
+        </div>
       </div>
 
+      {/* 4. SECCIONES ADICIONALES (mismo estilo glass/dark) */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 18 }}>
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: C.tutorialViolet,
-                  boxShadow: `0 0 6px ${C.tutorialViolet}`,
-                }}
-              />
-              <GroupLabel style={{ marginBottom: 0 }}>Petnova · Negocio</GroupLabel>
-            </div>
-            <Btn variant="text" onClick={() => onNavigate("petnova")}>Ver todo</Btn>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#ffffff" }}>Distribución 50 / 30 / 20</div>
+            <Btn variant="text" onClick={() => onNavigate("presupuesto")}>Ver todo</Btn>
           </div>
-          <Card>
-            <Row label="Ingresos del mes" value={fmt(calc.totalIngresosPetnovaLocal)} color={C.money} />
-            <Row label="Tu sueldo (Pay Yourself First)" value={fmt(calc.sueldo)} />
-            <Row label="Reinversión en el negocio" value={fmt(calc.reinversion)} color={calc.reinversion >= 0 ? C.money : C.bad} last />
-          </Card>
-        </div>
-
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: C.tutorialBlue,
-                  boxShadow: `0 0 6px ${C.tutorialBlue}`,
-                }}
-              />
-              <GroupLabel style={{ marginBottom: 0 }}>Personal · Tu dinero</GroupLabel>
-            </div>
-            <Btn variant="text" onClick={() => onNavigate("personal")}>Ver todo</Btn>
-          </div>
-          <Card>
-            <Row label="Ingresos personales" value={fmt(calc.totalIngresosPersonal)} color={C.money} />
-            <Row label="Gastos personales" value={fmt(calc.totalGastosPersonal)} color={C.bad} />
-            <Row label="Gasto hormiga detectado" value={fmt(calc.gastoHormiga)} last />
-          </Card>
-        </div>
-
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: C.money,
-                  boxShadow: `0 0 6px ${C.money}`,
-                }}
-              />
-              <GroupLabel style={{ marginBottom: 0 }}>Metas y futuro</GroupLabel>
-            </div>
-            <Btn variant="text" onClick={() => onNavigate("metas")}>Ver todo</Btn>
-          </div>
-          <Card>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "12px 0", borderBottom: `1px solid ${C.divider}` }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 12,
-                    background: C.moneyBg,
-                    border: `1px solid ${C.moneyBorder}`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: C.money,
-                  }}
-                >
-                  <Icon name="lock" size={16} strokeWidth={1.8} />
+          <div style={{ background: "#1c1c1e", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: "18px 16px" }}>
+            {["Necesidad", "Gusto", "Ahorro"].map((tipo, idx) => {
+              const val = calc.gastosPorTipo[tipo];
+              const meta = tipo === "Necesidad" ? calc.metaNecesidad : tipo === "Gusto" ? calc.metaGusto : calc.metaAhorro;
+              const p = meta > 0 ? val / meta : 0;
+              const color = p > 1 ? C.bad : p > 0.85 ? "#bd64f5" : C.money;
+              const icon = tipo === "Necesidad" ? "home" : tipo === "Gusto" ? "sparkle" : "target";
+              const pctOf = tipo === "Necesidad" ? state.config.pctNecesidad : tipo === "Gusto" ? state.config.pctGusto : state.config.pctAhorro;
+              return (
+                <div key={tipo} style={{ marginBottom: idx < 2 ? 18 : 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                    <div
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 10,
+                        background: `${color}22`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Icon name={icon} size={15} strokeWidth={1.8} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
+                        <span style={{ fontSize: 13.5, color: "#ffffff", fontWeight: 700 }}>{tipo}</span>
+                        <span style={{ fontSize: 10.5, color: "#9ca3af", fontWeight: 700, letterSpacing: 0.3 }}>
+                          {pct(pctOf)} ideal
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 12, color: "#9ca3af", fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
+                        {fmt(val)} <span style={{ color: "#4B4B4B" }}>·</span> <span style={{ color: "#9ca3af" }}>meta {fmt(meta)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ paddingLeft: 42 }}>
+                    <Meter pctValue={p} color={color} height={7} />
+                  </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: 13.5, color: C.text, fontWeight: 700 }}>Fondo de emergencia</div>
-                  <div style={{ fontSize: 11, color: C.textFaint, marginTop: 2 }}>
-                    Meta: {state.config.mesesFondo} meses · {fmt(calc.metaFondo)}
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 18 }}>
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#ffffff" }}>Petnova · Negocio</div>
+              <Btn variant="text" onClick={() => onNavigate("petnova")}>Ver todo</Btn>
+            </div>
+            <div style={{ background: "#1c1c1e", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: "8px 16px" }}>
+              <Row label="Ingresos del mes" value={fmt(calc.totalIngresosPetnovaLocal)} color={C.money} />
+              <Row label="Tu sueldo (Pay Yourself First)" value={fmt(calc.sueldo)} />
+              <Row label="Reinversión en el negocio" value={fmt(calc.reinversion)} color={calc.reinversion >= 0 ? C.money : C.bad} last />
+            </div>
+          </div>
+
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#ffffff" }}>Personal · Tu dinero</div>
+              <Btn variant="text" onClick={() => onNavigate("personal")}>Ver todo</Btn>
+            </div>
+            <div style={{ background: "#1c1c1e", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: "8px 16px" }}>
+              <Row label="Ingresos personales" value={fmt(calc.totalIngresosPersonal)} color={C.money} />
+              <Row label="Gastos personales" value={fmt(calc.totalGastosPersonal)} color={C.bad} />
+              <Row label="Gasto hormiga detectado" value={fmt(calc.gastoHormiga)} last />
+            </div>
+          </div>
+
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#ffffff" }}>Metas y futuro</div>
+              <Btn variant="text" onClick={() => onNavigate("metas")}>Ver todo</Btn>
+            </div>
+            <div style={{ background: "#1c1c1e", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: "14px 16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "12px 0", borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 12,
+                      background: C.moneyBg,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: C.money,
+                    }}
+                  >
+                    <Icon name="lock" size={16} strokeWidth={1.8} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13.5, color: "#ffffff", fontWeight: 700 }}>Fondo de emergencia</div>
+                    <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
+                      Meta: {state.config.mesesFondo} meses · {fmt(calc.metaFondo)}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: C.money, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
+                    {pct(calc.pctFondo)}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#9ca3af", fontFamily: FONT, fontVariantNumeric: "tabular-nums", marginTop: 2 }}>
+                    {fmt(state.fondoAhorrado || 0)} ahorrados
                   </div>
                 </div>
               </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 16, fontWeight: 800, color: C.money, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
-                  {pct(calc.pctFondo)}
-                </div>
-                <div style={{ fontSize: 11, color: C.textFaint, fontFamily: FONT, fontVariantNumeric: "tabular-nums", marginTop: 2 }}>
-                  {fmt(state.fondoAhorrado || 0)} ahorrados
-                </div>
+              <div style={{ paddingLeft: 46, paddingTop: 12, paddingBottom: 4 }}>
+                <Meter pctValue={Math.min(calc.pctFondo, 1)} color={C.money} height={8} />
               </div>
-            </div>
-            <div style={{ paddingLeft: 46, paddingTop: 12, paddingBottom: 4 }}>
-              <Meter pctValue={Math.min(calc.pctFondo, 1)} color={C.money} height={8} />
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "14px 0 0" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 12,
-                    background: C.brandBg,
-                    border: `1px solid ${C.brandBorder}`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: C.brand,
-                  }}
-                >
-                  <Icon name="trophy" size={16} strokeWidth={1.8} />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "14px 0 0" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 12,
+                      background: C.brandBg,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#bd64f5",
+                    }}
+                  >
+                    <Icon name="trophy" size={16} strokeWidth={1.8} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13.5, color: "#ffffff", fontWeight: 700 }}>Proyección a 6 meses</div>
+                    <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
+                      Patrimonio estimado
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div style={{ fontSize: 13.5, color: C.text, fontWeight: 700 }}>Proyección a 6 meses</div>
-                  <div style={{ fontSize: 11, color: C.textFaint, marginTop: 2 }}>
-                    Patrimonio estimado
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#bd64f5", fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
+                    {fmt(calc.proyeccion[5]?.patrimonio || 0)}
                   </div>
                 </div>
               </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 16, fontWeight: 800, color: C.brand, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
-                  {fmt(calc.proyeccion[5]?.patrimonio || 0)}
-                </div>
-              </div>
             </div>
-          </Card>
+          </div>
         </div>
       </div>
     </div>
