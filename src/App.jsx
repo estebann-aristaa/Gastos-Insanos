@@ -949,16 +949,19 @@ function Row({ label, value, bold, color, last }) {
         alignItems: "center",
         padding: "12px 0",
         borderBottom: last ? "none" : `1px solid ${C.divider}`,
+        gap: 12,
       }}
     >
-      <span style={{ color: bold ? C.text : C.textMuted, fontWeight: bold ? 700 : 400, fontSize: 14 }}>{label}</span>
+      <span className="r-text" style={{ color: bold ? C.text : C.textMuted, fontWeight: bold ? 700 : 400, fontSize: 14, minWidth: 0 }}>{label}</span>
       <span
+        className="r-minw"
         style={{
           color: color || C.text,
           fontFamily: FONT,
           fontVariantNumeric: "tabular-nums",
           fontWeight: 700,
           fontSize: bold ? 15 : 14,
+          flexShrink: 0,
         }}
       >
         {value}
@@ -1599,6 +1602,8 @@ function AppInner({ user }) {
         .fin-sheetitem:active { background: ${C.cardHover}; }
         .fin-field[required]:not(:placeholder-shown):invalid { color: ${C.bad}; }
         .fin-field[required]:not(:placeholder-shown):valid:not(:focus) { color: ${C.money}; }
+        .r-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; max-width: 100%; }
+        .r-break { word-break: break-word; overflow-wrap: break-word; }
         @media (max-width: 899px) {
           .fin-bottom-nav { display: flex; }
           .fin-swipe-area { padding-bottom: 110px; }
@@ -1608,9 +1613,32 @@ function AppInner({ user }) {
         @media (min-width: 900px) {
           .fin-2col { grid-template-columns: 336px 1fr; gap: 28px; }
         }
+        @media (max-width: 620px) {
+          .fin-container.r-pad { padding: 0 14px !important; }
+          .r-grid-3 { grid-template-columns: 1fr !important; }
+          .r-grid-2 { grid-template-columns: 1fr !important; }
+          .r-wrap { flex-wrap: wrap !important; }
+          .r-wrap-r { flex-wrap: wrap-reverse !important; }
+          .r-tabs { flex-wrap: wrap; gap: 10px; }
+          .r-tabs > * { flex-shrink: 0; }
+          .r-input { width: 100% !important; max-width: 100% !important; min-width: 0 !important; }
+          .r-minw { min-width: 0 !important; }
+          .r-quick { gap: 14px !important; padding: 0 !important; }
+          .r-gap-sm { gap: 10px !important; }
+          .r-hero-am { font-size: 40px !important; letter-spacing: -1.4 !important; }
+          .r-am { font-size: 32px !important; letter-spacing: -1 !important; }
+          .r-label { font-size: 12.5px !important; }
+        }
+        @media (max-width: 400px) {
+          .fin-container.r-pad { padding: 0 12px !important; }
+          .r-hero-am { font-size: 34px !important; letter-spacing: -1.2 !important; }
+          .r-am { font-size: 26px !important; letter-spacing: -0.8 !important; }
+          .r-pad-sm { padding: 14px !important; }
+          .r-txt-lg { font-size: 17px !important; }
+        }
       `}</style>
 
-      <div className="fin-container" style={{ padding: "0px 20px 0 20px", position: "relative" }}>
+      <div className="fin-container r-pad" style={{ padding: "0px 20px 0 20px", position: "relative" }}>
 
       <div
         className="fin-container fin-swipe-area"
@@ -2016,6 +2044,7 @@ function Dashboard({ state, calc, onNavigate, onOpenMenu, userName, onShowTutori
         </div>
 
         <div
+          className="r-hero-am"
           style={{
             fontSize: 52,
             fontWeight: 800,
@@ -2094,6 +2123,7 @@ function Dashboard({ state, calc, onNavigate, onOpenMenu, userName, onShowTutori
 
       {/* 2. BOTONES DE ACCIÓN RÁPIDA */}
       <div
+        className="r-quick"
         style={{
           display: "flex",
           justifyContent: "center",
@@ -2101,6 +2131,7 @@ function Dashboard({ state, calc, onNavigate, onOpenMenu, userName, onShowTutori
           gap: 32,
           marginBottom: 36,
           padding: "0 10px",
+          flexWrap: "wrap",
         }}
       >
         {[
@@ -2569,6 +2600,7 @@ function Petnova({ state, update, calc, onOpenMenu, userName, saving }) {
 
         <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 16 }}>
           <div
+            className="r-am"
             style={{
               fontSize: 46,
               fontWeight: 800,
@@ -2719,7 +2751,7 @@ function Petnova({ state, update, calc, onOpenMenu, userName, saving }) {
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 18 }}>
+        <div className="r-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 18 }}>
           {[
             {
               label: "Tu sueldo",
@@ -3002,7 +3034,7 @@ function Petnova({ state, update, calc, onOpenMenu, userName, saving }) {
                         - {fmt(Number(g.monto) || 0)}
                       </div>
                       <div style={{ marginTop: 2, display: "flex", justifyContent: "flex-end" }}>
-                        <Field type="number" placeholder="Monto" value={g.monto} onChange={(v) => updGasto(g.id, { monto: v })} style={{ ...txAmountStyle, width: 110 }} />
+                        <Field type="number" placeholder="Monto" value={g.monto} onChange={(v) => updGasto(g.id, { monto: v })} style={{ ...txAmountStyle, width: 110, maxWidth: "100%" }} />
                       </div>
                     </div>
                   }
@@ -3333,6 +3365,7 @@ function Personal({ state, update, calc, onOpenMenu, userName, saving }) {
 
         <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 16 }}>
           <div
+            className="r-am"
             style={{
               fontSize: 46,
               fontWeight: 800,
@@ -3503,7 +3536,7 @@ function Personal({ state, update, calc, onOpenMenu, userName, saving }) {
           </button>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+        <div className="r-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
           {[
             {
               label: "Necesidad",
@@ -3616,9 +3649,9 @@ function Personal({ state, update, calc, onOpenMenu, userName, saving }) {
 
       {/* GASTO HORMIGA DETECTADO */}
       <div style={{ marginBottom: 28 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 19, fontWeight: 700, color: "#ffffff", letterSpacing: -0.2 }}>Gasto Hormiga detectado</span>
+        <div className="r-wrap r-gap-sm" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div className="r-wrap" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span className="r-txt-lg" style={{ fontSize: 19, fontWeight: 700, color: "#ffffff", letterSpacing: -0.2 }}>Gasto Hormiga detectado</span>
             <div
               style={{
                 width: 22,
@@ -3657,6 +3690,7 @@ function Personal({ state, update, calc, onOpenMenu, userName, saving }) {
         </div>
 
         <div
+          className="r-wrap"
           style={{
             background: "#1C1D21",
             border: "1px solid rgba(255,255,255,0.05)",
@@ -3777,7 +3811,7 @@ function Personal({ state, update, calc, onOpenMenu, userName, saving }) {
                         + {fmt(Number(i.monto) || 0)}
                       </div>
                       <div style={{ marginTop: 2, display: "flex", justifyContent: "flex-end" }}>
-                        <Field type="number" placeholder="Monto" value={i.monto} onChange={(v) => updOtroIngreso(i.id, { monto: v })} style={{ ...txAmountStyle, width: 110 }} />
+                        <Field type="number" placeholder="Monto" value={i.monto} onChange={(v) => updOtroIngreso(i.id, { monto: v })} style={{ ...txAmountStyle, width: 110, maxWidth: "100%" }} />
                       </div>
                     </div>
                   }
@@ -3847,7 +3881,7 @@ function Personal({ state, update, calc, onOpenMenu, userName, saving }) {
                           - {fmt(Number(g.monto) || 0)}
                         </div>
                         <div style={{ marginTop: 2, display: "flex", justifyContent: "flex-end" }}>
-                          <Field type="number" placeholder="Monto" value={g.monto} onChange={(v) => updGasto(g.id, { monto: v })} style={{ ...txAmountStyle, width: 110 }} />
+                          <Field type="number" placeholder="Monto" value={g.monto} onChange={(v) => updGasto(g.id, { monto: v })} style={{ ...txAmountStyle, width: 110, maxWidth: "100%" }} />
                         </div>
                       </div>
                     }
@@ -4467,6 +4501,9 @@ function Presupuesto({ state, update, calc, onOpenMenu, userName, saving }) {
                               fontSize: 11.5,
                               fontWeight: 700,
                               width: 86,
+                              maxWidth: "100%",
+                              flex: "0 0 auto",
+                              minWidth: 0,
                               fontFamily: FONT,
                               fontFamilyVariantNumeric: "tabular-nums",
                               outline: "none",
@@ -4955,6 +4992,7 @@ function Metas({ state, update, calc, onOpenMenu }) {
               </button>
             </div>
             <div
+              className="r-am"
               style={{
                 fontSize: 46,
                 fontWeight: 800,
@@ -5030,9 +5068,9 @@ function Metas({ state, update, calc, onOpenMenu }) {
 
       {/* TABS + TÍTULO */}
       <div style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 21, fontWeight: 700, color: "#ffffff", letterSpacing: -0.3, marginBottom: 18 }}>Mis metas</div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 4, background: "rgba(255,255,255,0.03)", padding: 4, borderRadius: 999, border: "1px solid rgba(255,255,255,0.05)" }}>
+        <div className="r-txt-lg" style={{ fontSize: 21, fontWeight: 700, color: "#ffffff", letterSpacing: -0.3, marginBottom: 18 }}>Mis metas</div>
+        <div className="r-wrap r-gap-sm" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div className="r-wrap" style={{ display: "flex", alignItems: "center", gap: 4, background: "rgba(255,255,255,0.03)", padding: 4, borderRadius: 999, border: "1px solid rgba(255,255,255,0.05)" }}>
             {[
               { id: "activas", label: "Activas" },
               { id: "completadas", label: "Completadas" },
@@ -5253,6 +5291,7 @@ function Metas({ state, update, calc, onOpenMenu }) {
                           letterSpacing: -0.4,
                           padding: 0,
                           width: 120,
+                          maxWidth: "40vw",
                           minWidth: 0,
                           boxSizing: "border-box",
                         }}
@@ -5731,8 +5770,8 @@ function Historial({ state, update, calc, onOpenMenu }) {
       </div>
 
       {/* TÍTULO MESES CERRADOS + ORDENAMIENTO */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
-        <div style={{ fontSize: 21, fontWeight: 700, color: "#ffffff", letterSpacing: -0.3 }}>Meses cerrados</div>
+      <div className="r-wrap r-gap-sm" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+        <div className="r-txt-lg" style={{ fontSize: 21, fontWeight: 700, color: "#ffffff", letterSpacing: -0.3 }}>Meses cerrados</div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <button
             onClick={() => setOrden((o) => (o === "recientes" ? "antiguos" : "recientes"))}
@@ -5872,8 +5911,8 @@ function Historial({ state, update, calc, onOpenMenu }) {
                 </div>
               </div>
 
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 10 }}>
-                <div style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div className="r-wrap" style={{ display: "flex", alignItems: "flex-end", gap: 10 }}>
+                <div className="r-grid-3 r-minw" style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
                   <div>
                     <div style={{ fontSize: 11.5, color: "#9ca3af", fontWeight: 500, marginBottom: 5 }}>Ingresos</div>
                     <input
@@ -6184,7 +6223,7 @@ function ConfigTab({ state, update, tasaLoading, tasaError, onRefreshTasa, onOpe
         >
           <div style={{ fontSize: 14, color: "#9ca3af", fontWeight: 500, marginBottom: 18 }}>Define cómo se distribuye tu dinero</div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+          <div className="r-grid-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             {/* CARD 50% NECESIDADES */}
             <div
               style={{
@@ -6609,6 +6648,7 @@ function ConfigTab({ state, update, tasaLoading, tasaError, onRefreshTasa, onOpe
                   fontVariantNumeric: "tabular-nums",
                   padding: 0,
                   width: 140,
+                  maxWidth: "40vw",
                   minWidth: 0,
                   textAlign: "right",
                   boxSizing: "border-box",
@@ -6703,6 +6743,8 @@ function ConfigTab({ state, update, tasaLoading, tasaError, onRefreshTasa, onOpe
                         fontVariantNumeric: "tabular-nums",
                         padding: 0,
                         width: 180,
+                        maxWidth: "55vw",
+                        minWidth: 0,
                         boxSizing: "border-box",
                       }}
                     />
