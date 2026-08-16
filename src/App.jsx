@@ -166,7 +166,8 @@ const Icon = ({ name, size = 18, color = "currentColor", strokeWidth = 1.6 }) =>
     homePentagon: <><path d="M12 3.5l-7.5 6V20a1 1 0 001 1h5v-6h3v6h5a1 1 0 001-1V9.5l-7.5-6z" /><path d="M12 14v4" /></>,
     marketSwap: <><path d="M18 4.5v2.5a2.5 2.5 0 01-2.5 2.5" /><path d="M18 4.5l-2.8 2.8" /><path d="M6 19.5v-2.5a2.5 2.5 0 012.5-2.5" /><path d="M6 19.5l2.8-2.8" /><rect x="5" y="10.5" width="14" height="6.5" rx="2" /><path d="M9 14h1" /></>,
     pieChart: <><path d="M12 4.5a7.5 7.5 0 107.5 7.5H12V4.5z" /><path d="M20 12a8 8 0 00-.2-1.8" /><path d="M12 4.5V12h8" /></>,
-    transfer: <><path d="M7.5 16.5l5.5-10.5" /><path d="M7.5 16.5h4" /><path d="M7.5 16.5v-4" /><path d="M16.5 7.5l-5.5 10.5" /><path d="M16.5 7.5h-4" /><path d="M16.5 7.5v4" /></>,
+    transfer: <><path d="M9 4v14" /><path d="M5 8l4-4 4 4" /><path d="M15 6v14" /><path d="M11 16l4 4 4-4" /></>,
+    swapHoriz: <><path d="M4 7h11.5" /><path d="M12 4l3.5 3L12 10" /><path d="M20 17H8.5" /><path d="M12 20l-3.5-3L12 14" /></>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
@@ -300,37 +301,24 @@ function HeroWalletCard({
 }) {
   const [visible, setVisible] = useState(true);
   return (
-    <div style={{ marginBottom: 28, position: "relative" }}>
-      {/* Glow verde radial detrás de la tarjeta (estilo PDF 1) */}
+    <div style={{ marginBottom: 24, position: "relative", paddingTop: 8 }}>
       <div
         aria-hidden
         style={{
           position: "absolute",
-          top: -40,
+          top: -10,
           left: "50%",
           transform: "translateX(-50%)",
-          width: 320,
-          height: 280,
-          background: `radial-gradient(closest-side, ${C.brandBg}, transparent 70%)`,
+          width: 380,
+          height: 300,
+          background: `radial-gradient(closest-side, ${C.brandBg}, transparent 72%)`,
           pointerEvents: "none",
           zIndex: 0,
         }}
       />
 
-      {/* TARJETA PRINCIPAL WALLET — esquinas top gigantes como PDF 1 */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          background: `linear-gradient(160deg, #1E211A 0%, #17191D 55%, #0F1013 100%)`,
-          border: `1px solid rgba(151, 220, 34, 0.22)`,
-          borderRadius: "44px 44px 28px 28px",
-          padding: "28px 22px 22px",
-          boxShadow: `0 22px 48px -26px rgba(151, 220, 34, 0.35), 0 4px 10px -2px rgba(0,0,0,0.5)`,
-        }}
-      >
-        {/* Header interno: Wallet label + bell */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 }}>
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
             <div
               style={{
@@ -348,8 +336,8 @@ function HeroWalletCard({
             title={visible ? "Ocultar monto" : "Mostrar monto"}
             className="fin-tap"
             style={{
-              width: 30,
-              height: 30,
+              width: 32,
+              height: 32,
               borderRadius: "50%",
               background: "rgba(255,255,255,0.04)",
               border: "1px solid rgba(255,255,255,0.06)",
@@ -360,57 +348,75 @@ function HeroWalletCard({
               justifyContent: "center",
             }}
           >
-            <Icon name={visible ? "eye" : "eyeOff"} size={14} strokeWidth={1.6} />
+            <Icon name={visible ? "eye" : "eyeOff"} size={15} strokeWidth={1.6} />
           </button>
         </div>
 
-        {/* Icono $ central arriba */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 18, position: "relative" }}>
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 104,
+              height: 104,
+              borderRadius: "50%",
+              background: `radial-gradient(closest-side, rgba(151,220,34,0.18), transparent 70%)`,
+            }}
+          />
           <div
             style={{
-              width: 58,
-              height: 58,
+              width: 90,
+              height: 90,
               borderRadius: "50%",
-              background: C.brandGradient,
+              background: "rgba(151,220,34,0.10)",
+              border: "1px solid rgba(151,220,34,0.14)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: C.brandOn,
-              fontSize: 25,
-              fontWeight: 900,
-              fontFamily: FONT,
-              boxShadow: `0 0 0 8px rgba(151, 220, 34, 0.12), 0 10px 20px -6px rgba(151, 220, 34, 0.5)`,
+              position: "relative",
             }}
           >
-            $
+            <div
+              style={{
+                fontSize: 52,
+                fontWeight: 900,
+                fontFamily: FONT,
+                color: C.brand,
+                lineHeight: 1,
+                textShadow: "0 6px 20px rgba(151,220,34,0.35)",
+              }}
+            >
+              $
+            </div>
           </div>
         </div>
 
-        {/* Valor GIGANTE — estilo PDF 1 font size enorme */}
-        <div style={{ textAlign: "center", marginBottom: 14 }}>
+        <div style={{ textAlign: "center", marginBottom: 16 }}>
           <div
             style={{
-              fontSize: 42,
+              fontSize: 46,
               fontWeight: 800,
-              letterSpacing: -1.5,
-              lineHeight: 1.05,
-              color: valueColor || C.text,
+              letterSpacing: -1.8,
+              lineHeight: 1.02,
+              color: C.text,
               fontFamily: FONT,
               fontVariantNumeric: "tabular-nums",
               wordBreak: "break-word",
-              marginBottom: 10,
+              marginBottom: 14,
             }}
           >
             {visible ? value : "$ ••••••"}
           </div>
-          {/* Badge porcentaje +4.5% PDF 1 */}
           {percentValue && (
             <div
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: 4,
-                padding: "5px 11px",
+                gap: 5,
+                padding: "7px 15px",
                 borderRadius: 999,
                 background: percentUp
                   ? "rgba(82, 211, 119, 0.14)"
@@ -420,22 +426,23 @@ function HeroWalletCard({
             >
               <Icon
                 name={percentUp ? "arrowUp" : "arrowDown"}
-                size={10}
-                strokeWidth={2.6}
+                size={11}
+                strokeWidth={2.8}
                 color={percentUp ? C.money : C.bad}
               />
               <span
                 style={{
-                  fontSize: 11,
+                  fontSize: 13,
                   fontWeight: 800,
                   color: percentUp ? C.money : C.bad,
                   fontFamily: FONT,
+                  letterSpacing: 0.2,
                 }}
               >
                 {percentValue}
               </span>
               {percentLabel && (
-                <span style={{ fontSize: 10.5, color: C.textMuted, marginLeft: 2 }}>
+                <span style={{ fontSize: 11.5, color: C.textMuted, marginLeft: 2 }}>
                   {percentLabel}
                 </span>
               )}
@@ -444,14 +451,14 @@ function HeroWalletCard({
         </div>
       </div>
 
-      {/* 3 QUICK ACTIONS estilo PDF 1 — circulos grandes Send/Receive/Swap */}
       <div
         style={{
           display: "flex",
-          justifyContent: "space-around",
+          justifyContent: "center",
           alignItems: "flex-start",
-          padding: "26px 18px 0",
-          maxWidth: 420,
+          gap: 18,
+          padding: "10px 10px 0",
+          maxWidth: 460,
           margin: "0 auto",
         }}
       >
@@ -461,22 +468,19 @@ function HeroWalletCard({
             icon: "arrowDown",
             onClick: onAddGasto,
             color: C.bad,
-            bg: "rgba(245, 50, 34, 0.1)",
           },
           {
             label: "Ingreso",
             icon: "arrowUp",
             onClick: onAddIngreso,
             color: C.brand,
-            bg: "rgba(151, 220, 34, 0.12)",
             primary: true,
           },
           {
             label: "Cerrar Mes",
-            icon: "trend",
+            icon: "swapHoriz",
             onClick: onCerrarMes,
             color: C.money,
-            bg: "rgba(82, 211, 119, 0.1)",
           },
         ].map((it) => (
           <button
@@ -490,34 +494,33 @@ function HeroWalletCard({
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: 9,
-              flex: 1,
+              gap: 10,
+              flex: "0 1 auto",
+              minWidth: 82,
               fontFamily: FONT,
-              padding: "2px 4px",
+              padding: 0,
             }}
           >
             <div
               style={{
-                width: 54,
-                height: 54,
+                width: 62,
+                height: 62,
                 borderRadius: "50%",
-                background: it.primary ? C.brandGradient : it.bg,
-                border: it.primary
-                  ? "1px solid transparent"
-                  : `1px solid ${it.color}30`,
-                color: it.primary ? C.brandOn : it.color,
+                background: "rgba(255,255,255,0.04)",
+                border: `1px solid ${it.primary ? "rgba(151,220,34,0.20)" : "rgba(255,255,255,0.07)"}`,
+                color: it.color,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 boxShadow: it.primary
-                  ? `0 10px 24px -10px rgba(151, 220, 34, 0.65)`
+                  ? `0 0 0 1px rgba(151,220,34,0.08) inset`
                   : "none",
                 transition: "transform 0.15s ease, box-shadow 0.15s ease",
               }}
             >
-              <Icon name={it.icon} size={20} strokeWidth={1.8} />
+              <Icon name={it.icon} size={22} strokeWidth={2.0} />
             </div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: C.textMuted }}>{it.label}</span>
+            <span style={{ fontSize: 11.5, fontWeight: 700, color: C.textMuted, letterSpacing: 0.2 }}>{it.label}</span>
           </button>
         ))}
       </div>
@@ -1585,7 +1588,7 @@ function AppInner({ user }) {
         .fin-field[required]:not(:placeholder-shown):valid:not(:focus) { color: ${C.money}; }
         @media (max-width: 899px) {
           .fin-bottom-nav { display: flex; }
-          .fin-swipe-area { padding-bottom: 94px; }
+          .fin-swipe-area { padding-bottom: 110px; }
           .fin-toptabs { display: none; }
           .fin-dots { display: none; }
         }
@@ -1594,7 +1597,7 @@ function AppInner({ user }) {
         }
       `}</style>
 
-      <div className="fin-container" style={{ padding: "24px 20px 0 20px", position: "relative" }}>
+      <div className="fin-container" style={{ padding: "8px 20px 0 20px", position: "relative" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 24 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
             <div
@@ -1742,7 +1745,7 @@ function AppInner({ user }) {
 
       <div
         className="fin-container fin-swipe-area"
-        style={{ padding: "24px 0 10px 0", position: "relative", overflow: "hidden", touchAction: "pan-y" }}
+        style={{ padding: "24px 0 110px 0", position: "relative", overflow: "hidden", touchAction: "pan-y" }}
         onTouchStart={onPanelPointerDown}
         onTouchMove={onPanelPointerMove}
         onTouchEnd={onPanelPointerUp}
@@ -1800,64 +1803,26 @@ function AppInner({ user }) {
         className="fin-bottom-nav"
         style={{
           position: "fixed",
-          left: 12,
-          right: 12,
-          bottom: "calc(10px + env(safe-area-inset-bottom, 0px))",
-          zIndex: 60,
-          background: "transparent",
-          border: "none",
-          borderRadius: 0,
-          padding: 0,
+          bottom: 16,
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: "90%",
+          maxWidth: 400,
+          backgroundColor: "#1a1d21",
+          borderRadius: 28,
+          zIndex: 50,
+          display: "flex",
           justifyContent: "space-around",
-          alignItems: "flex-end",
+          alignItems: "center",
+          padding: "12px 0",
           boxShadow: "none",
           WebkitMaskImage: "none",
           maskImage: "none",
           overflow: "visible",
-          minHeight: 112,
+          border: "none",
+          minHeight: 0,
         }}
       >
-        <svg
-          aria-hidden
-          width="100%"
-          height="112"
-          viewBox="0 0 1000 220"
-          preserveAspectRatio="none"
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            zIndex: 0,
-            pointerEvents: "none",
-            filter: "drop-shadow(0 -4px 6px rgba(0,0,0,0.25)) drop-shadow(0 16px 40px -12px rgba(0,0,0,0.7))",
-          }}
-        >
-          <defs>
-            <path id="nav-bar-path" d="
-              M 84 60
-              L 420 60
-              A 80 80 0 0 0 580 60
-              L 916 60
-              A 84 84 0 0 1 1000 144
-              L 1000 210
-              L 0 210
-              L 0 144
-              A 84 84 0 0 1 84 60
-              Z
-            "/>
-            <clipPath id="nav-clip">
-              <use href="#nav-bar-path" />
-            </clipPath>
-          </defs>
-          <use
-            href="#nav-bar-path"
-            fill={C.card}
-            stroke={C.border}
-            strokeWidth={2}
-          />
-        </svg>
-
         <button
           onClick={() => {
             setMenuOpen(false);
@@ -1868,26 +1833,25 @@ function AppInner({ user }) {
           aria-label="Nuevo movimiento"
           style={{
             position: "absolute",
+            top: -20,
             left: "50%",
-            top: 2,
             transform: "translateX(-50%)",
-            background: C.brand,
-            border: "none",
+            width: 56,
+            height: 56,
+            borderRadius: "50%",
+            backgroundColor: "#a3e635",
+            zIndex: 51,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            width: 62,
-            height: 62,
-            borderRadius: "50%",
-            color: C.brandOn,
+            border: "none",
             cursor: "pointer",
-            boxShadow: `0 12px 30px -8px rgba(151,220,34,0.7)`,
-            transition: "transform 0.15s ease, box-shadow 0.15s ease",
+            color: "#000000",
+            boxShadow: `0 14px 32px -8px rgba(163,230,53,0.75)`,
             flexShrink: 0,
-            zIndex: 3,
           }}
         >
-          <Icon name="transfer" size={26} strokeWidth={2.4} color="#000000" />
+          <Icon name="transfer" size={22} strokeWidth={2.0} color="#000000" />
         </button>
 
         {bottomNavTabs.filter(t => t.id !== "personal").map((t, i) => {
@@ -1911,9 +1875,8 @@ function AppInner({ user }) {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 4,
-                padding: "20px 10px 14px",
-                marginBottom: 4,
+                gap: 3,
+                padding: "4px 4px 2px",
                 color: active ? C.brand : C.textMuted,
                 cursor: "pointer",
                 fontFamily: FONT,
@@ -1938,9 +1901,8 @@ function AppInner({ user }) {
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 4,
-            padding: "20px 10px 14px",
-            marginBottom: 4,
+            gap: 3,
+            padding: "4px 4px 2px",
             color: menuOpen || menuActive ? C.brand : C.textMuted,
             cursor: "pointer",
             fontFamily: FONT,
