@@ -1618,7 +1618,7 @@ function AppInner({ user }) {
             <Dashboard state={state} calc={calc} onNavigate={goToTab} onOpenMenu={() => setMenuOpen(true)} userName={user.user_metadata?.name || user.email?.split('@')[0] || 'Usuario'} onShowTutorial={() => setShowTutorial(true)} onSignOut={() => supabase.auth.signOut()} saving={saving} />
           </div>
           <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
-            <Petnova state={state} update={update} calc={calc} />
+            <Petnova state={state} update={update} calc={calc} onOpenMenu={() => setMenuOpen(true)} userName={user.user_metadata?.name || user.email?.split('@')[0] || 'Usuario'} saving={saving} />
           </div>
           <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
             <Personal state={state} update={update} calc={calc} />
@@ -2385,7 +2385,7 @@ function Dashboard({ state, calc, onNavigate, onOpenMenu, userName, onShowTutori
 /* ============================================================
    PETNOVA
    ============================================================ */
-function Petnova({ state, update, calc }) {
+function Petnova({ state, update, calc, onOpenMenu, userName, saving }) {
   const addIngreso = () => update({ ingresosPetnova: [...state.ingresosPetnova, { id: uid(), fecha: todayStr(), concepto: "", montoUsd: "", tasa: state.config.tasaRef }] });
   const updIngreso = (id, patch) => update({ ingresosPetnova: state.ingresosPetnova.map((i) => (i.id === id ? { ...i, ...patch } : i)) });
   const delIngreso = (id) => update({ ingresosPetnova: state.ingresosPetnova.filter((i) => i.id !== id) });
@@ -2394,101 +2394,765 @@ function Petnova({ state, update, calc }) {
   const updGasto = (id, patch) => update({ gastosPetnova: state.gastosPetnova.map((g) => (g.id === id ? { ...g, ...patch } : g)) });
   const delGasto = (id) => update({ gastosPetnova: state.gastosPetnova.filter((g) => g.id !== id) });
 
+  const [visible, setVisible] = useState(true);
+  const totalIngresos = Number(calc.totalIngresosPetnovaLocal) || 0;
+  const totalGastos = Number(calc.totalGastosPetnova) || 0;
+  const saldoDisponible = totalIngresos - totalGastos;
+  const sueldoMonto = Number(calc.sueldo) || 0;
+  const reinversionMonto = Number(calc.reinversion) || 0;
+  const operacionMonto = totalGastos;
+
+  const denominador = (sueldoMonto + reinversionMonto + operacionMonto) || totalIngresos || 1;
+  const pctSueldo = sueldoMonto / denominador;
+  const pctReinv = reinversionMonto / denominador;
+  const pctOper = operacionMonto / denominador;
+
+  const deltaMonto = saldoDisponible;
+  const deltaPct = totalIngresos > 0 ? (saldoDisponible / totalIngresos) * 100 : 0;
+  const deltaUp = deltaMonto >= 0;
+
+  const nIngresos = state.ingresosPetnova.length;
+  const nGastos = state.gastosPetnova.length;
+
+  const actividad = [
+    ...state.ingresosPetnova.map((i) => ({
+      ...i,
+      _tipo: "ingreso",
+      _monto: (Number(i.montoUsd) || 0) * (Number(i.tasa) || 0),
+      _sort: i.fecha || "",
+    })),
+    ...state.gastosPetnova.map((g) => ({
+      ...g,
+      _tipo: "gasto",
+      _monto: Number(g.monto) || 0,
+      _sort: g.fecha || "",
+    })),
+  ]
+    .sort((a, b) => (b._sort || "").localeCompare(a._sort || ""))
+    .slice(0, 6);
+
   return (
-    <div>
-      <SectionHead badge={<PrivacyBadge shared />}>Petnova — Negocio</SectionHead>
+    <div style={{ paddingBottom: "120px" }}>
+      {/* HEADER */}
+      <div style={{ marginBottom: 28, paddingTop: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <button
+            onClick={onOpenMenu}
+            className="fin-tap"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#ffffff",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Icon name="menu" size={20} strokeWidth={1.8} />
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                background: "rgba(189,100,245,0.18)",
+                border: "1px solid rgba(189,100,245,0.25)",
+                color: "#bd64f5",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Icon name="cat" size={18} strokeWidth={1.8} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 20, fontWeight: 700, color: "#ffffff", letterSpacing: -0.3 }}>
+                <span>Petnova</span>
+                <Icon name="chevronDown" size={15} strokeWidth={2} color="#9ca3af" />
+              </div>
+              <div style={{ fontSize: 12.5, color: "#9ca3af", marginTop: 2 }}>Finanzas del Negocio</div>
+            </div>
+          </div>
+          <button
+            className="fin-tap"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#ffffff",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Icon name="bell" size={18} strokeWidth={1.8} />
+          </button>
+        </div>
+      </div>
 
-      <Hero
-        label="Ingresos del mes"
-        value={fmt(calc.totalIngresosPetnovaLocal)}
-        valueColor={C.money}
-        sub={`Equivale a ${fmtUsd(calc.totalIngresosPetnovaUSD)}`}
-        icon="cat"
-      />
-
-      <div className="fin-2col">
-        <div>
-          <GroupLabel>Resumen — Pay Yourself First</GroupLabel>
-          <Card>
-            <Row label="Ingresos totales" value={fmt(calc.totalIngresosPetnovaLocal)} />
-            <Row label="Gastos operativos" value={fmt(-calc.totalGastosPetnova)} />
-            <Row label="Utilidad antes de sueldo" value={fmt(calc.utilidadAntesSueldo)} bold />
-            <Row label="Tu sueldo fijo" value={fmt(-calc.sueldo)} />
-            <Row label="Queda en el negocio" value={fmt(calc.reinversion)} bold color={calc.reinversion >= 0 ? C.money : C.bad} last />
-          </Card>
+      {/* TARJETA SALDO DISPONIBLE */}
+      <div
+        style={{
+          background: "#1C1D21",
+          border: "1px solid rgba(255,255,255,0.05)",
+          borderRadius: 22,
+          padding: "22px 20px",
+          marginBottom: 28,
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 14.5, color: "#9ca3af", fontWeight: 600, letterSpacing: 0.2 }}>Saldo disponible</span>
+            <button
+              onClick={() => setVisible((v) => !v)}
+              className="fin-tap"
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: "50%",
+                background: "transparent",
+                border: "none",
+                color: "#9ca3af",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 0,
+              }}
+            >
+              <Icon name={visible ? "eye" : "eyeOff"} size={16} strokeWidth={1.8} />
+            </button>
+          </div>
+          <button
+            className="fin-tap"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#ffffff",
+              cursor: "pointer",
+              fontFamily: FONT,
+              fontSize: 13,
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 14px",
+              borderRadius: 999,
+            }}
+          >
+            <span>Este mes</span>
+            <Icon name="chevronDown" size={12} strokeWidth={2} />
+          </button>
         </div>
 
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <GroupLabel style={{ marginBottom: 0 }}>Ingresos</GroupLabel>
-            <Btn onClick={addIngreso} icon="plus">Ingreso</Btn>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 16 }}>
+          <div
+            style={{
+              fontSize: 46,
+              fontWeight: 800,
+              letterSpacing: -1.8,
+              lineHeight: 1,
+              color: "#ffffff",
+              fontFamily: FONT,
+              fontVariantNumeric: "tabular-nums",
+              wordBreak: "break-word",
+            }}
+          >
+            {visible ? `$ ${fmt(saldoDisponible).replace("$", "").trim()}` : "$ ••••••"}
           </div>
-          <Card style={{ marginBottom: 24 }}>
-            {state.ingresosPetnova.length === 0 && <EmptyState text="Aún no registras ingresos. Agrega el primero." icon="cat" />}
-            {state.ingresosPetnova.map((i, idx) => (
-              <TxRow
-                key={i.id}
-                icon="arrowUp"
-                iconColor={C.money}
-                last={idx === state.ingresosPetnova.length - 1}
-                onDelete={() => delIngreso(i.id)}
-                primary={
-                  <Field
-                    placeholder="Concepto (ej: Hotmart ebook)"
-                    value={i.concepto}
-                    onChange={(v) => updIngreso(i.id, { concepto: v })}
-                    style={txPrimaryStyle}
-                  />
-                }
-                meta={
-                  <>
-                    <Field type="date" value={i.fecha} onChange={(v) => updIngreso(i.id, { fecha: v })} style={{ ...txMetaStyle, width: 108 }} />
-                    <span style={{ color: C.textFaint }}>·</span>
-                    <Field type="number" placeholder="USD" value={i.montoUsd} onChange={(v) => updIngreso(i.id, { montoUsd: v })} style={{ ...txMetaStyle, width: 68 }} />
-                    <span style={{ color: C.textFaint }}>·</span>
-                    <Field type="number" placeholder="Tasa" value={i.tasa} onChange={(v) => updIngreso(i.id, { tasa: v })} style={{ ...txMetaStyle, width: 76 }} />
-                  </>
-                }
-                amount={fmt((Number(i.montoUsd) || 0) * (Number(i.tasa) || 0))}
-                amountColor={C.money}
-              />
-            ))}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.divider}`, fontWeight: 700, fontSize: 14 }}>
-              <span style={{ color: C.textFaint, fontWeight: 400, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>{fmtUsd(calc.totalIngresosPetnovaUSD)} →</span>
-              <span style={{ color: C.money, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>{fmt(calc.totalIngresosPetnovaLocal)}</span>
-            </div>
-          </Card>
-
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <GroupLabel style={{ marginBottom: 0 }}>Gastos operativos</GroupLabel>
-            <Btn onClick={addGasto} variant="ghost" icon="plus">Gasto</Btn>
-          </div>
-          <Card style={{ marginBottom: 24 }}>
-            {state.gastosPetnova.length === 0 && <EmptyState text="Sin gastos operativos registrados aún." icon="x" />}
-            {state.gastosPetnova.map((g, idx) => (
-              <TxRow
-                key={g.id}
-                icon={NEGOCIO_ICONS[g.categoria] || "arrowDown"}
-                iconColor={C.bad}
-                last={idx === state.gastosPetnova.length - 1}
-                onDelete={() => delGasto(g.id)}
-                primary={<Field placeholder="Concepto" value={g.concepto} onChange={(v) => updGasto(g.id, { concepto: v })} style={txPrimaryStyle} />}
-                meta={
-                  <>
-                    <Field type="date" value={g.fecha} onChange={(v) => updGasto(g.id, { fecha: v })} style={{ ...txMetaStyle, width: 108 }} />
-                    <span style={{ color: C.textFaint }}>·</span>
-                    <Dropdown value={g.categoria} onChange={(v) => updGasto(g.id, { categoria: v })} options={CATS_NEGOCIO} style={{ ...txMetaStyle, width: 150 }} />
-                  </>
-                }
-                amount={<Field type="number" placeholder="Monto" value={g.monto} onChange={(v) => updGasto(g.id, { monto: v })} style={txAmountStyle} />}
-                amountColor={C.bad}
-              />
-            ))}
-            <div style={{ textAlign: "right", marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.divider}`, fontWeight: 700, fontSize: 14, fontFamily: FONT, fontVariantNumeric: "tabular-nums", color: C.bad }}>
-              {fmt(calc.totalGastosPetnova)}
-            </div>
-          </Card>
         </div>
+
+        {deltaMonto !== 0 && (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "7px 16px",
+              borderRadius: 999,
+              background: "rgba(189, 100, 245, 0.15)",
+              border: "1px solid rgba(189,100,245,0.3)",
+              marginBottom: 22,
+            }}
+          >
+            <Icon
+              name={deltaUp ? "arrowUp" : "arrowDown"}
+              size={10.5}
+              strokeWidth={2.8}
+              color="#bd64f5"
+            />
+            <span
+              style={{
+                fontSize: 12.5,
+                fontWeight: 800,
+                color: "#bd64f5",
+                fontFamily: FONT,
+                letterSpacing: 0.2,
+              }}
+            >
+              {deltaUp ? "+" : "-"} {fmt(Math.abs(deltaMonto))}
+            </span>
+            <span
+              style={{
+                fontSize: 12.5,
+                fontWeight: 800,
+                color: "#bd64f5",
+                fontFamily: FONT,
+                letterSpacing: 0.2,
+              }}
+            >
+              ▲ {Math.round(deltaPct * 100) / 100}%
+            </span>
+          </div>
+        )}
+
+        {/* Ingresos vs Gastos + gráfico */}
+        <div style={{ display: "flex", alignItems: "stretch", gap: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, paddingRight: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#52D377" }} />
+              <span style={{ fontSize: 13, color: "#9ca3af", fontWeight: 600 }}>Ingresos</span>
+            </div>
+            <div
+              style={{
+                fontSize: 23,
+                fontWeight: 800,
+                color: "#ffffff",
+                fontFamily: FONT,
+                fontVariantNumeric: "tabular-nums",
+                letterSpacing: -0.5,
+                marginBottom: 4,
+              }}
+            >
+              {fmt(totalIngresos)}
+            </div>
+            <div style={{ fontSize: 12, color: "#9ca3af" }}>{nIngresos} operaciones</div>
+          </div>
+          <div
+            style={{
+              width: 1,
+              background: "rgba(255,255,255,0.06)",
+              margin: "6px 0",
+              alignSelf: "stretch",
+            }}
+          />
+          <div style={{ flex: 1, minWidth: 0, paddingLeft: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#F53222" }} />
+              <span style={{ fontSize: 13, color: "#9ca3af", fontWeight: 600 }}>Gastos</span>
+            </div>
+            <div
+              style={{
+                fontSize: 23,
+                fontWeight: 800,
+                color: "#ffffff",
+                fontFamily: FONT,
+                fontVariantNumeric: "tabular-nums",
+                letterSpacing: -0.5,
+                marginBottom: 4,
+              }}
+            >
+              {fmt(totalGastos)}
+            </div>
+            <div style={{ fontSize: 12, color: "#9ca3af" }}>{nGastos} operaciones</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", paddingLeft: 14, minWidth: 68 }}>
+            <div
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: "50%",
+                background: "rgba(189,100,245,0.15)",
+                border: "1px solid rgba(189,100,245,0.22)",
+                color: "#bd64f5",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Icon name="pieChart" size={24} strokeWidth={2.0} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* DISTRIBUCIÓN PAY YOURSELF FIRST */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+          <span style={{ fontSize: 19, fontWeight: 700, color: "#ffffff", letterSpacing: -0.2 }}>Distribución Pay Yourself First</span>
+          <div
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "#9ca3af",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Icon name="help" size={11} strokeWidth={1.8} />
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 18 }}>
+          {[
+            {
+              label: "Tu sueldo",
+              pct: pctSueldo,
+              monto: sueldoMonto,
+              icon: "user",
+              tag: "Transferido",
+              tagColor: "#52D377",
+              tagBg: "rgba(82,211,119,0.12)",
+            },
+            {
+              label: "Reinversión",
+              pct: pctReinv,
+              monto: reinversionMonto,
+              icon: "trend",
+              tag: "En la empresa",
+              tagColor: "#bd64f5",
+              tagBg: "rgba(189,100,245,0.12)",
+            },
+            {
+              label: "Operación",
+              pct: pctOper,
+              monto: operacionMonto,
+              icon: "portfolio",
+              tag: "Gastos operativos",
+              tagColor: "#3DB6F2",
+              tagBg: "rgba(61,182,242,0.12)",
+            },
+          ].map((c) => (
+            <div
+              key={c.label}
+              style={{
+                background: "#1C1D21",
+                border: "1px solid rgba(255,255,255,0.05)",
+                borderRadius: 20,
+                padding: "16px 14px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+                minHeight: 144,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 14,
+                    background: "rgba(189,100,245,0.15)",
+                    border: "1px solid rgba(189,100,245,0.22)",
+                    color: "#bd64f5",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon name={c.icon} size={17} strokeWidth={1.9} />
+                </div>
+                <div style={{ lineHeight: 1.15 }}>
+                  <div style={{ fontSize: 13.5, color: "#ffffff", fontWeight: 700 }}>{c.label}</div>
+                  <div style={{ fontSize: 15.5, color: "#bd64f5", fontWeight: 800, marginTop: 3, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
+                    {Math.round(c.pct * 100)}%
+                  </div>
+                </div>
+              </div>
+              <div
+                style={{
+                  fontSize: 18,
+                  fontWeight: 800,
+                  color: "#ffffff",
+                  fontFamily: FONT,
+                  fontVariantNumeric: "tabular-nums",
+                  letterSpacing: -0.2,
+                  lineHeight: 1.1,
+                }}
+              >
+                {fmt(c.monto)}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div
+                  style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: "50%",
+                    background: c.tagBg,
+                    border: `1px solid ${c.tagColor}55`,
+                    color: c.tagColor,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon name="check" size={9} strokeWidth={3} />
+                </div>
+                <span style={{ fontSize: 11.5, color: "#9ca3af", fontWeight: 600 }}>{c.tag}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Barra segmentada */}
+        <div
+          style={{
+            display: "flex",
+            gap: 4,
+            height: 10,
+            borderRadius: 999,
+            overflow: "hidden",
+            marginBottom: 10,
+          }}
+        >
+          <div
+            style={{
+              flex: Math.max(0.01, pctSueldo),
+              background: "linear-gradient(90deg, #bd64f5, #9c3fe0)",
+              borderRadius: 999,
+              minWidth: 20,
+            }}
+          />
+          <div
+            style={{
+              flex: Math.max(0.01, pctReinv),
+              background: "linear-gradient(90deg, #9c3fe0, #8230c2)",
+              borderRadius: 999,
+              minWidth: 20,
+            }}
+          />
+          <div
+            style={{
+              flex: Math.max(0.01, pctOper),
+              background: "linear-gradient(90deg, #bd64f5, #d796ff)",
+              borderRadius: 999,
+              minWidth: 20,
+            }}
+          />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-around", gap: 8 }}>
+          {[
+            { p: pctSueldo, c: "#bd64f5" },
+            { p: pctReinv, c: "#9c3fe0" },
+            { p: pctOper, c: "#d796ff" },
+          ].map((it, idx) => (
+            <div
+              key={idx}
+              style={{
+                fontSize: 12.5,
+                fontWeight: 700,
+                color: it.c,
+                fontFamily: FONT,
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {Math.round(it.p * 100)}%
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ACTIVIDAD RECIENTE */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div style={{ fontSize: 19, fontWeight: 700, color: "#ffffff", letterSpacing: -0.2 }}>Actividad reciente</div>
+          <button
+            onClick={() => {}}
+            className="fin-tap"
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#bd64f5",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              fontFamily: FONT,
+              padding: 0,
+              textDecoration: "underline",
+              textDecorationColor: "rgba(189,100,245,0.5)",
+              textUnderlineOffset: 3,
+            }}
+          >
+            Ver todas
+          </button>
+        </div>
+
+        <div
+          style={{
+            background: "#1C1D21",
+            border: "1px solid rgba(255,255,255,0.05)",
+            borderRadius: 22,
+            padding: "10px 14px",
+          }}
+        >
+          {actividad.length === 0 && (
+            <div style={{ padding: "20px 4px", textAlign: "center" }}>
+              <EmptyState text="No hay actividad registrada todavía." icon="cat" />
+            </div>
+          )}
+          {state.ingresosPetnova.length > 0 && (
+            <div style={{ borderBottom: `1px solid rgba(255,255,255,0.05)` }}>
+              <GroupLabel style={{ marginTop: 12, marginBottom: 8 }}>Ingresos</GroupLabel>
+              {state.ingresosPetnova.map((i, idx) => (
+                <TxRow
+                  key={i.id}
+                  icon="arrowDown"
+                  iconColor="#52D377"
+                  last={idx === state.ingresosPetnova.length - 1 && state.gastosPetnova.length === 0}
+                  onDelete={() => delIngreso(i.id)}
+                  primary={
+                    <Field
+                      placeholder="Concepto (ej: Consulta Veterinaria)"
+                      value={i.concepto}
+                      onChange={(v) => updIngreso(i.id, { concepto: v })}
+                      style={txPrimaryStyle}
+                    />
+                  }
+                  meta={
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 11, color: "#52D377", fontWeight: 700 }}>Ingreso</span>
+                      <span style={{ fontSize: 10.5, color: "#4B4B4B" }}>·</span>
+                      <Field type="date" value={i.fecha} onChange={(v) => updIngreso(i.id, { fecha: v })} style={{ ...txMetaStyle, width: "auto", padding: "2px 0" }} />
+                    </div>
+                  }
+                  amount={
+                    <div style={{ textAlign: "right", lineHeight: 1.2 }}>
+                      <div
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 800,
+                          color: "#52D377",
+                          fontFamily: FONT,
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        + {fmt((Number(i.montoUsd) || 0) * (Number(i.tasa) || 0))}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5, marginTop: 2, flexWrap: "wrap" }}>
+                        <Field type="number" placeholder="USD" value={i.montoUsd} onChange={(v) => updIngreso(i.id, { montoUsd: v })} style={{ ...txMetaStyle, width: 58, textAlign: "right" }} />
+                        <span style={{ color: "#4B4B4B", fontSize: 10 }}>·</span>
+                        <Field type="number" placeholder="Tasa" value={i.tasa} onChange={(v) => updIngreso(i.id, { tasa: v })} style={{ ...txMetaStyle, width: 62, textAlign: "right" }} />
+                      </div>
+                    </div>
+                  }
+                  amountColor="#52D377"
+                />
+              ))}
+            </div>
+          )}
+          {state.gastosPetnova.length > 0 && (
+            <div>
+              <GroupLabel style={{ marginTop: 12, marginBottom: 8 }}>Gastos operativos</GroupLabel>
+              {state.gastosPetnova.map((g, idx) => (
+                <TxRow
+                  key={g.id}
+                  icon="arrowUp"
+                  iconColor="#F53222"
+                  last={idx === state.gastosPetnova.length - 1}
+                  onDelete={() => delGasto(g.id)}
+                  primary={<Field placeholder="Concepto (ej: Alquiler Local)" value={g.concepto} onChange={(v) => updGasto(g.id, { concepto: v })} style={txPrimaryStyle} />}
+                  meta={
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 11, color: "#F53222", fontWeight: 700 }}>Gasto</span>
+                      <span style={{ fontSize: 10.5, color: "#4B4B4B" }}>·</span>
+                      <Field type="date" value={g.fecha} onChange={(v) => updGasto(g.id, { fecha: v })} style={{ ...txMetaStyle, width: "auto", padding: "2px 0" }} />
+                      <span style={{ fontSize: 10.5, color: "#4B4B4B" }}>·</span>
+                      <Dropdown value={g.categoria} onChange={(v) => updGasto(g.id, { categoria: v })} options={CATS_NEGOCIO} style={{ ...txMetaStyle, flex: 1, minWidth: 100 }} />
+                    </div>
+                  }
+                  amount={
+                    <div style={{ textAlign: "right", lineHeight: 1.2 }}>
+                      <div
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 800,
+                          color: "#F53222",
+                          fontFamily: FONT,
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        - {fmt(Number(g.monto) || 0)}
+                      </div>
+                      <div style={{ marginTop: 2, display: "flex", justifyContent: "flex-end" }}>
+                        <Field type="number" placeholder="Monto" value={g.monto} onChange={(v) => updGasto(g.id, { monto: v })} style={{ ...txAmountStyle, width: 110 }} />
+                      </div>
+                    </div>
+                  }
+                  amountColor="#F53222"
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Totales ingresos/gastos al pie */}
+          {(state.ingresosPetnova.length > 0 || state.gastosPetnova.length > 0) && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 20,
+                marginTop: 16,
+                paddingTop: 14,
+                borderTop: `1px solid rgba(255,255,255,0.05)`,
+                fontSize: 12,
+                fontFamily: FONT,
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              <div style={{ textAlign: "left" }}>
+                <div style={{ color: "#9ca3af", fontWeight: 500, marginBottom: 4 }}>
+                  Ingresos · {fmtUsd(calc.totalIngresosPetnovaUSD)}
+                </div>
+                <div style={{ color: "#52D377", fontWeight: 800, fontSize: 14 }}>
+                  {fmt(calc.totalIngresosPetnovaLocal)}
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ color: "#9ca3af", fontWeight: 500, marginBottom: 4 }}>Gastos operativos</div>
+                <div style={{ color: "#F53222", fontWeight: 800, fontSize: 14 }}>
+                  {fmt(calc.totalGastosPetnova)}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* RESUMEN DEL NEGOCIO */}
+      <div style={{ marginBottom: 22 }}>
+        <button
+          onClick={() => {}}
+          className="fin-tap"
+          style={{
+            width: "100%",
+            background: "#1C1D21",
+            border: "1px solid rgba(255,255,255,0.05)",
+            borderRadius: 22,
+            padding: "16px 18px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            fontFamily: FONT,
+            textAlign: "left",
+          }}
+        >
+          <div
+            style={{
+              width: 46,
+              height: 46,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #bd64f5 0%, #9c3fe0 100%)",
+              color: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Icon name="pieChart" size={20} strokeWidth={2.0} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0, lineHeight: 1.2 }}>
+            <div style={{ fontSize: 16.5, fontWeight: 700, color: "#ffffff", marginBottom: 4 }}>Resumen del negocio</div>
+            <div style={{ fontSize: 12.5, color: "#9ca3af" }}>Análisis completo y métricas</div>
+          </div>
+          <div style={{ color: "#bd64f5", display: "flex", alignItems: "center" }}>
+            <Icon name="chevronRight" size={20} strokeWidth={2.0} />
+          </div>
+        </button>
+      </div>
+
+      {/* BOTONES ACCIÓN RÁPIDA INFERIORES */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <button
+          onClick={addIngreso}
+          className="fin-tap"
+          style={{
+            background: "#1C1D21",
+            border: "1px solid rgba(255,255,255,0.05)",
+            borderRadius: 22,
+            padding: "14px 16px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            fontFamily: FONT,
+            color: "#ffffff",
+            gap: 10,
+          }}
+        >
+          <div style={{ fontSize: 15.5, fontWeight: 700, color: "#ffffff", display: "flex", alignItems: "center", gap: 8 }}>
+            <Icon name="plus" size={17} strokeWidth={2.2} />
+            Ingreso
+          </div>
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #bd64f5 0%, #9c3fe0 100%)",
+              color: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Icon name="arrowDown" size={17} strokeWidth={2.0} />
+          </div>
+        </button>
+        <button
+          onClick={addGasto}
+          className="fin-tap"
+          style={{
+            background: "#1C1D21",
+            border: "1px solid rgba(255,255,255,0.05)",
+            borderRadius: 22,
+            padding: "14px 16px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            fontFamily: FONT,
+            color: "#ffffff",
+            gap: 10,
+          }}
+        >
+          <div style={{ fontSize: 15.5, fontWeight: 700, color: "#ffffff", display: "flex", alignItems: "center", gap: 8 }}>
+            <Icon name="plus" size={17} strokeWidth={2.2} />
+            Gasto
+          </div>
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #bd64f5 0%, #9c3fe0 100%)",
+              color: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Icon name="arrowUp" size={17} strokeWidth={2.0} />
+          </div>
+        </button>
       </div>
     </div>
   );
