@@ -790,13 +790,13 @@ function Btn({ children, onClick, variant = "primary", style, disabled, icon, ty
   );
 }
 
-function Meter({ pctValue, color = C.money, height = 6 }) {
+function Meter({ pctValue, color = C.money, height = 6, track }) {
   const clamped = Math.min(Math.max(pctValue, 0), 1);
   return (
     <div
       style={{
-        background: C.cardAlt,
-        borderRadius: 6,
+        background: track || C.cardAlt,
+        borderRadius: 999,
         height,
         overflow: "hidden",
         width: "100%",
@@ -807,7 +807,7 @@ function Meter({ pctValue, color = C.money, height = 6 }) {
           width: `${clamped * 100}%`,
           background: color,
           height: "100%",
-          borderRadius: 6,
+          borderRadius: 999,
           transition: "width 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
       />
@@ -1624,7 +1624,7 @@ function AppInner({ user }) {
             <Personal state={state} update={update} calc={calc} onOpenMenu={() => setMenuOpen(true)} userName={user.user_metadata?.name || user.email?.split('@')[0] || 'Usuario'} saving={saving} />
           </div>
           <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
-            <Presupuesto state={state} update={update} />
+            <Presupuesto state={state} update={update} calc={calc} onOpenMenu={() => setMenuOpen(true)} userName={user.user_metadata?.name || user.email?.split('@')[0] || 'Usuario'} saving={saving} />
           </div>
           <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
             <Metas state={state} update={update} calc={calc} />
@@ -4009,76 +4009,729 @@ function Personal({ state, update, calc, onOpenMenu, userName, saving }) {
 /* ============================================================
    PRESUPUESTO
    ============================================================ */
-function Presupuesto({ state, update }) {
+function Presupuesto({ state, update, calc, onOpenMenu, userName, saving }) {
   const setLimite = (cat, val) => update({ presupuestos: { ...state.presupuestos, [cat]: val } });
   const gastadoPorCategoria = (cat) => state.gastosPersonal.filter((g) => g.categoria === cat).reduce((s, g) => s + (Number(g.monto) || 0), 0);
 
   const totalLimite = CATS_PERSONAL.reduce((s, c) => s + (Number(state.presupuestos[c.name]) || 0), 0);
   const totalGastado = CATS_PERSONAL.reduce((s, c) => s + gastadoPorCategoria(c.name), 0);
   const pctTotal = totalLimite > 0 ? totalGastado / totalLimite : 0;
-  const heroColor = totalLimite === 0 ? C.text : pctTotal > 1 ? C.bad : pctTotal > 0.85 ? C.brand : C.money;
+
+  const [visible, setVisible] = useState(true);
+  const [viewBy, setViewBy] = useState("cat"); // "cat" | "group"
+
+  const disponible = Math.max(0, totalLimite - totalGastado);
+  const excedido = totalGastado > totalLimite ? totalGastado - totalLimite : 0;
+
+  const categoriasData = CATS_PERSONAL.map((cat) => {
+    const limite = Number(state.presupuestos[cat.name]) || 0;
+    const gastado = gastadoPorCategoria(cat.name);
+    const p = limite > 0 ? gastado / limite : 0;
+    const estado = limite === 0 ? null : p < 0.7 ? "bien" : p <= 1 ? "cerca" : "excedido";
+    return { ...cat, limite, gastado, p, estado };
+  });
+
+  const gruposRaw = ["Necesidad", "Gusto", "Ahorro"].map((tipo) => {
+    const catsTipo = categoriasData.filter((c) => c.tipo === tipo);
+    const limite = catsTipo.reduce((s, c) => s + c.limite, 0);
+    const gastado = catsTipo.reduce((s, c) => s + c.gastado, 0);
+    const p = limite > 0 ? gastado / limite : 0;
+    const estado = limite === 0 ? null : p < 0.7 ? "bien" : p <= 1 ? "cerca" : "excedido";
+    return { tipo, limite, gastado, p, estado, n: catsTipo.length };
+  });
+
+  const colorByTipo = {
+    Necesidad: "#52D377",
+    Gusto: "#bd64f5",
+    Ahorro: "#F5A822",
+  };
+  const colorByEstado = {
+    bien: "#52D377",
+    cerca: "#F5A822",
+    excedido: "#F53222",
+  };
+  const iconByTipo = {
+    Necesidad: "target",
+    Gusto: "sparkle",
+    Ahorro: "trophy",
+  };
+
+  const renderAnillo = () => {
+    const R = 46;
+    const C = 2 * Math.PI * R;
+    const fill = Math.max(0, Math.min(1, pctTotal));
+    const dash = C * fill;
+    const pctColor =
+      totalLimite === 0 ? "#9ca3af" : pctTotal > 1 ? "#F53222" : pctTotal > 0.85 ? "#F5A822" : "#52D377";
+    return (
+      <div style={{ position: "relative", width: 108, height: 108, flexShrink: 0 }}>
+        <svg width="108" height="108" viewBox="0 0 108 108" style={{ transform: "rotate(-90deg)" }}>
+          <circle cx="54" cy="54" r={R} stroke="rgba(255,255,255,0.06)" strokeWidth="10" fill="none" />
+          <circle
+            cx="54"
+            cy="54"
+            r={R}
+            stroke="url(#ringGrad)"
+            strokeWidth="10"
+            strokeLinecap="round"
+            fill="none"
+            strokeDasharray={`${dash} ${C}`}
+            strokeDashoffset="0"
+          />
+          <defs>
+            <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#bd64f5" />
+              <stop offset="100%" stopColor="#9c3fe0" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.1 }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: pctColor, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
+            {pct(pctTotal)}
+          </div>
+          <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, marginTop: 2 }}>Utilizado</div>
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div>
-      <SectionHead badge={<PrivacyBadge shared={false} />}>Presupuesto por categoría</SectionHead>
+    <div style={{ paddingBottom: "120px" }}>
+      {/* HEADER */}
+      <div style={{ marginBottom: 28, paddingTop: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <button
+            onClick={onOpenMenu}
+            className="fin-tap"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#ffffff",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Icon name="menu" size={20} strokeWidth={1.8} />
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                background: "rgba(189,100,245,0.18)",
+                border: "1px solid rgba(189,100,245,0.25)",
+                color: "#bd64f5",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Icon name="pieChart" size={18} strokeWidth={1.8} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 20, fontWeight: 700, color: "#ffffff", letterSpacing: -0.3 }}>
+                <span>Presupuesto</span>
+                <Icon name="chevronDown" size={15} strokeWidth={2} color="#9ca3af" />
+              </div>
+              <div style={{ fontSize: 12.5, color: "#9ca3af", marginTop: 2 }}>Control de presupuesto</div>
+            </div>
+          </div>
+          <button
+            className="fin-tap"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#ffffff",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Icon name="bell" size={18} strokeWidth={1.8} />
+          </button>
+        </div>
+      </div>
 
-      <Hero
-        label="Gastado este mes"
-        value={fmt(totalGastado)}
-        valueColor={heroColor}
-        sub={totalLimite > 0 ? `${fmt(totalLimite)} presupuestado · ${pct(pctTotal)} usado` : "Define un límite por categoría para hacer seguimiento."}
-        icon="target"
-      />
-
-      <GroupLabel>Categorías</GroupLabel>
-      <Card padding="8px 22px">
-        {CATS_PERSONAL.map((cat, idx) => {
-          const limite = Number(state.presupuestos[cat.name]) || 0;
-          const gastado = gastadoPorCategoria(cat.name);
-          const p = limite > 0 ? gastado / limite : 0;
-          const estado = limite === 0 ? null : p < 0.8 ? "bien" : p <= 1 ? "cerca" : "excedido";
-          const color = estado === "excedido" ? C.bad : estado === "cerca" ? C.brand : C.money;
-          const tipoColor = cat.tipo === "Necesidad" ? C.textMuted : cat.tipo === "Gusto" ? C.brand : C.money;
-          const tipoIcon = CATEGORY_ICONS[cat.name] || "dots";
-          return (
-            <div key={cat.name} style={{ display: "flex", gap: 13, padding: "16px 0", borderBottom: idx < CATS_PERSONAL.length - 1 ? `1px solid ${C.divider}` : "none" }}>
-              <div
+      {/* BLOQUE SUPERIOR DE RESUMEN */}
+      <div
+        style={{
+          background: "#1C1D21",
+          border: "1px solid rgba(255,255,255,0.05)",
+          borderRadius: 22,
+          padding: "22px 20px",
+          marginBottom: 28,
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14, marginBottom: 20 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 14.5, color: "#9ca3af", fontWeight: 600, letterSpacing: 0.2 }}>Presupuesto mensual</span>
+                <button
+                  onClick={() => setVisible((v) => !v)}
+                  className="fin-tap"
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: "50%",
+                    background: "transparent",
+                    border: "none",
+                    color: "#9ca3af",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                  }}
+                >
+                  <Icon name={visible ? "eye" : "eyeOff"} size={16} strokeWidth={1.8} />
+                </button>
+              </div>
+              <button
+                className="fin-tap"
                 style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: "50%",
-                  background: `${tipoColor}18`,
-                  color: tipoColor,
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  color: "#ffffff",
+                  cursor: "pointer",
+                  fontFamily: FONT,
+                  fontSize: 13,
+                  fontWeight: 600,
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
+                  gap: 6,
+                  padding: "8px 14px",
+                  borderRadius: 999,
                   flexShrink: 0,
-                  marginTop: 2,
                 }}
               >
-                <Icon name={tipoIcon} size={16} strokeWidth={1.8} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 10, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, flex: 1, minWidth: 130 }}>{cat.name}</span>
-                  <div style={{ width: 112 }}>
-                    <Field type="number" placeholder="Límite" value={state.presupuestos[cat.name] || ""} onChange={(v) => setLimite(cat.name, v)} />
-                  </div>
-                  {estado && <Chip estado={estado} />}
-                </div>
-                {limite > 0 && (
-                  <>
-                    <Meter pctValue={p} color={color} />
-                    <div style={{ fontSize: 12, color: C.textMuted, marginTop: 6, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
-                      {fmt(gastado)} de {fmt(limite)} · {pct(p)}
-                    </div>
-                  </>
-                )}
+                <span>Este mes</span>
+                <Icon name="chevronDown" size={12} strokeWidth={2} />
+              </button>
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <div
+                style={{
+                  fontSize: 42,
+                  fontWeight: 800,
+                  letterSpacing: -1.8,
+                  lineHeight: 1,
+                  color: "#ffffff",
+                  fontFamily: FONT,
+                  fontVariantNumeric: "tabular-nums",
+                  wordBreak: "break-word",
+                }}
+              >
+                {visible ? `$ ${fmt(totalLimite).replace("$", "").trim()}` : "$ ••••••"}
               </div>
             </div>
+
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "7px 16px",
+                borderRadius: 999,
+                background: "rgba(189, 100, 245, 0.15)",
+                border: "1px solid rgba(189,100,245,0.3)",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 12.5,
+                  fontWeight: 800,
+                  color: "#bd64f5",
+                  fontFamily: FONT,
+                  letterSpacing: 0.2,
+                }}
+              >
+                Gastado {visible ? fmt(totalGastado) : "••••••"}
+              </span>
+              <span
+                style={{
+                  width: 4,
+                  height: 4,
+                  borderRadius: "50%",
+                  background: "#bd64f5",
+                  opacity: 0.7,
+                }}
+              />
+              <span
+                style={{
+                  fontSize: 12.5,
+                  fontWeight: 800,
+                  color: "#bd64f5",
+                  fontFamily: FONT,
+                  letterSpacing: 0.2,
+                }}
+              >
+                {pct(pctTotal)}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ flexShrink: 0, marginTop: 30 }}>{renderAnillo()}</div>
+        </div>
+
+        {/* Métricas: Disponible / Presupuesto / Excedido */}
+        <div style={{ display: "flex", alignItems: "stretch", gap: 0 }}>
+          {[
+            { label: "Disponible", monto: disponible, color: "#52D377", dot: true },
+            { label: "Presupuesto", monto: totalLimite, color: "#bd64f5", dot: true, divider: true },
+            { label: "Excedido", monto: excedido, color: "#F53222", dot: true, divider: true },
+          ].map((m, idx) => (
+            <div
+              key={m.label}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                paddingLeft: m.divider ? 10 : 0,
+                paddingRight: idx === 2 ? 0 : 10,
+                position: "relative",
+              }}
+            >
+              {m.divider && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: 8,
+                    bottom: 8,
+                    width: 1,
+                    background: "rgba(255,255,255,0.06)",
+                  }}
+                />
+              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+                {m.dot && <div style={{ width: 7, height: 7, borderRadius: "50%", background: m.color }} />}
+                <span style={{ fontSize: 13, color: "#9ca3af", fontWeight: 600 }}>{m.label}</span>
+              </div>
+              <div
+                style={{
+                  fontSize: 20,
+                  fontWeight: 800,
+                  color: m.color,
+                  fontFamily: FONT,
+                  fontVariantNumeric: "tabular-nums",
+                  letterSpacing: -0.3,
+                }}
+              >
+                {visible ? fmt(m.monto) : "••••••"}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* SELECTOR PESTAÑAS INTERNAS */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 20,
+        }}
+      >
+        {[
+          { id: "cat", label: "Por categoría" },
+          { id: "group", label: "Por grupo" },
+        ].map((t) => {
+          const active = viewBy === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setViewBy(t.id)}
+              className="fin-tap"
+              style={{
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: FONT,
+                padding: "8px 4px",
+                fontSize: 15,
+                fontWeight: 700,
+                color: active ? "#bd64f5" : "#9ca3af",
+                borderBottom: active ? `2px solid #bd64f5` : "2px solid transparent",
+                letterSpacing: active ? 0 : 0,
+                transition: "color 0.15s, border-color 0.15s",
+              }}
+            >
+              {t.label}
+            </button>
           );
         })}
-      </Card>
+      </div>
+
+      {/* LISTADO DE CATEGORÍAS / GRUPOS */}
+      <div
+        style={{
+          background: "#1C1D21",
+          border: "1px solid rgba(255,255,255,0.05)",
+          borderRadius: 22,
+          padding: "6px 14px",
+          marginBottom: 22,
+        }}
+      >
+        {viewBy === "cat" &&
+          categoriasData.map((c, idx) => {
+            const colorStatus = c.estado ? colorByEstado[c.estado] : "#9ca3af";
+            const tipoColor = colorByTipo[c.tipo] || "#9ca3af";
+            const iconName = CATEGORY_ICONS[c.name] || "dots";
+            const last = idx === categoriasData.length - 1;
+            return (
+              <div
+                key={c.name}
+                style={{
+                  padding: "16px 2px",
+                  borderBottom: last ? "none" : `1px solid rgba(255,255,255,0.05)`,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 14,
+                      background: `${tipoColor}1A`,
+                      border: `1px solid ${tipoColor}33`,
+                      color: tipoColor,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      marginTop: 2,
+                    }}
+                  >
+                    <Icon name={iconName} size={18} strokeWidth={1.9} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 6 }}>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: 15.5, color: "#ffffff", fontWeight: 700, marginBottom: 5 }}>{c.name}</div>
+                        <div
+                          style={{
+                            fontSize: 12.5,
+                            color: "#9ca3af",
+                            fontFamily: FONT,
+                            fontVariantNumeric: "tabular-nums",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <span>
+                            {fmt(c.limite)} presupuesto
+                          </span>
+                          <span style={{ width: 4, height: 4, borderRadius: "50%", background: "rgba(255,255,255,0.18)" }} />
+                          <span>
+                            {fmt(c.gastado)} gastado
+                          </span>
+                          <Field
+                            type="number"
+                            placeholder="Límite"
+                            value={state.presupuestos[c.name] || ""}
+                            onChange={(v) => setLimite(c.name, v)}
+                            style={{
+                              background: "rgba(255,255,255,0.04)",
+                              border: `1px solid rgba(255,255,255,0.07)`,
+                              borderRadius: 9,
+                              color: "#ffffff",
+                              padding: "4px 10px",
+                              fontSize: 11.5,
+                              fontWeight: 700,
+                              width: 86,
+                              fontFamily: FONT,
+                              fontFamilyVariantNumeric: "tabular-nums",
+                              outline: "none",
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, marginTop: 2 }}>
+                        <span
+                          style={{
+                            fontSize: 16,
+                            fontWeight: 800,
+                            color: colorStatus,
+                            fontFamily: FONT,
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          {c.limite > 0 ? pct(c.p) : "—"}
+                        </span>
+                        {c.estado === "excedido" ? (
+                          <div
+                            style={{
+                              width: 26,
+                              height: 26,
+                              borderRadius: "50%",
+                              background: "rgba(245,50,34,0.12)",
+                              border: "1px solid rgba(245,50,34,0.3)",
+                              color: "#F53222",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Icon name="alert" size={14} strokeWidth={2.0} />
+                          </div>
+                        ) : (
+                          <Icon name="chevronRight" size={18} strokeWidth={2} color="#9ca3af" />
+                        )}
+                      </div>
+                    </div>
+                    <Meter
+                      pctValue={Math.min(1, Math.max(0, c.p))}
+                      color={colorStatus}
+                      height={8}
+                      track="rgba(255,255,255,0.05)"
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+        {viewBy === "group" &&
+          gruposRaw.map((g, idx) => {
+            const colorStatus = g.estado ? colorByEstado[g.estado] : "#9ca3af";
+            const tipoColor = colorByTipo[g.tipo] || "#9ca3af";
+            const last = idx === gruposRaw.length - 1;
+            return (
+              <div
+                key={g.tipo}
+                style={{
+                  padding: "16px 2px",
+                  borderBottom: last ? "none" : `1px solid rgba(255,255,255,0.05)`,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 14,
+                      background: `${tipoColor}1A`,
+                      border: `1px solid ${tipoColor}33`,
+                      color: tipoColor,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      marginTop: 2,
+                    }}
+                  >
+                    <Icon name={iconByTipo[g.tipo] || "target"} size={18} strokeWidth={1.9} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 6 }}>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: 15.5, color: "#ffffff", fontWeight: 700, marginBottom: 5 }}>
+                          {g.tipo} <span style={{ fontSize: 12, color: "#9ca3af", fontWeight: 500 }}>· {g.n} categorías</span>
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 12.5,
+                            color: "#9ca3af",
+                            fontFamily: FONT,
+                            fontVariantNumeric: "tabular-nums",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                        >
+                          <span>
+                            {fmt(g.limite)} presupuesto
+                          </span>
+                          <span style={{ width: 4, height: 4, borderRadius: "50%", background: "rgba(255,255,255,0.18)" }} />
+                          <span>
+                            {fmt(g.gastado)} gastado
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, marginTop: 2 }}>
+                        <span
+                          style={{
+                            fontSize: 16,
+                            fontWeight: 800,
+                            color: colorStatus,
+                            fontFamily: FONT,
+                            fontVariantNumeric: "tabular-nums",
+                          }}
+                        >
+                          {g.limite > 0 ? pct(g.p) : "—"}
+                        </span>
+                        {g.estado === "excedido" ? (
+                          <div
+                            style={{
+                              width: 26,
+                              height: 26,
+                              borderRadius: "50%",
+                              background: "rgba(245,50,34,0.12)",
+                              border: "1px solid rgba(245,50,34,0.3)",
+                              color: "#F53222",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Icon name="alert" size={14} strokeWidth={2.0} />
+                          </div>
+                        ) : (
+                          <Icon name="chevronRight" size={18} strokeWidth={2} color="#9ca3af" />
+                        )}
+                      </div>
+                    </div>
+                    <Meter
+                      pctValue={Math.min(1, Math.max(0, g.p))}
+                      color={colorStatus}
+                      height={8}
+                      track="rgba(255,255,255,0.05)"
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+      </div>
+
+      {/* AJUSTAR PRESUPUESTOS */}
+      <div style={{ marginBottom: 22 }}>
+        <button
+          onClick={() => {}}
+          className="fin-tap"
+          style={{
+            width: "100%",
+            background: "rgba(189,100,245,0.08)",
+            border: "1px solid rgba(189,100,245,0.22)",
+            borderRadius: 22,
+            padding: "16px 18px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            fontFamily: FONT,
+            textAlign: "left",
+          }}
+        >
+          <div
+            style={{
+              width: 46,
+              height: 46,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #bd64f5 0%, #9c3fe0 100%)",
+              color: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Icon name="target" size={20} strokeWidth={2.0} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0, lineHeight: 1.2 }}>
+            <div style={{ fontSize: 16.5, fontWeight: 700, color: "#bd64f5", marginBottom: 4 }}>Ajustar presupuestos</div>
+            <div style={{ fontSize: 12.5, color: "#9ca3af" }}>Edita los límites por categoría</div>
+          </div>
+          <div style={{ color: "#bd64f5", display: "flex", alignItems: "center" }}>
+            <Icon name="chevronRight" size={20} strokeWidth={2.0} />
+          </div>
+        </button>
+      </div>
+
+      {/* BOTONES ACCIÓN RÁPIDA INFERIORES */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <button
+          onClick={() => {}}
+          className="fin-tap"
+          style={{
+            background: "#1C1D21",
+            border: "1px solid rgba(255,255,255,0.05)",
+            borderRadius: 22,
+            padding: "14px 16px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            fontFamily: FONT,
+            color: "#ffffff",
+            gap: 10,
+          }}
+        >
+          <div style={{ fontSize: 15.5, fontWeight: 700, color: "#ffffff", display: "flex", alignItems: "center", gap: 8 }}>
+            <Icon name="plus" size={17} strokeWidth={2.2} />
+            Nueva categoría
+          </div>
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #bd64f5 0%, #9c3fe0 100%)",
+              color: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Icon name="arrowDown" size={17} strokeWidth={2.0} />
+          </div>
+        </button>
+        <button
+          onClick={() => {}}
+          className="fin-tap"
+          style={{
+            background: "#1C1D21",
+            border: "1px solid rgba(255,255,255,0.05)",
+            borderRadius: 22,
+            padding: "14px 16px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            fontFamily: FONT,
+            color: "#ffffff",
+            gap: 10,
+          }}
+        >
+          <div style={{ fontSize: 15.5, fontWeight: 700, color: "#ffffff", display: "flex", alignItems: "center", gap: 8 }}>
+            <Icon name="refresh" size={17} strokeWidth={2.0} />
+            Historial
+          </div>
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #bd64f5 0%, #9c3fe0 100%)",
+              color: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Icon name="arrowUp" size={17} strokeWidth={2.0} />
+          </div>
+        </button>
+      </div>
     </div>
   );
 }
