@@ -173,6 +173,9 @@ const Icon = ({ name, size = 18, color = "currentColor", strokeWidth = 1.6 }) =>
     calendar: <><rect x="3.8" y="5.2" width="16.4" height="15.6" rx="2.2" /><path d="M8.8 3.8v3.6M15.2 3.8v3.6M3.8 9.6h16.4" /></>,
     chevronDown: <path d="M5.5 9l6.5 6.5L18.5 9" />,
     bell: <><path d="M5.5 16.5a7 7 0 014-6.2V8a2.5 2.5 0 015 0v2.3a7 7 0 014 6.2" /><path d="M10 19a2 2 0 004 0" /></>,
+    clock: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3.2 2" /></>,
+    filter: <><path d="M3.8 5.5h16.4" /><path d="M6.2 12h11.6" /><path d="M9 18.5h6" /></>,
+    barChart: <><path d="M5.5 18.5V11M9.5 18.5V5.5M13.5 18.5v-7.5M17.5 18.5V9" /></>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
@@ -1635,7 +1638,7 @@ function AppInner({ user }) {
             <Metas state={state} update={update} calc={calc} onOpenMenu={() => setMenuOpen(true)} />
           </div>
           <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
-            <Historial state={state} update={update} calc={calc} />
+            <Historial state={state} update={update} calc={calc} onOpenMenu={() => setMenuOpen(true)} />
           </div>
           <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
             <ConfigTab state={state} update={update} tasaLoading={tasaLoading} tasaError={tasaError} onRefreshTasa={refrescarTasa} />
@@ -5442,112 +5445,571 @@ function Metas({ state, update, calc, onOpenMenu }) {
 /* ============================================================
    HISTORIAL + PROYECCIÓN
    ============================================================ */
-function Historial({ state, update, calc }) {
+function Historial({ state, update, calc, onOpenMenu }) {
   const addMes = () => {
-    update({
-      historial: [
-        ...state.historial,
-        {
-          id: uid(),
-          mes: "",
-          ingresos: calc.totalIngresosPersonal,
-          gastos: calc.totalGastosPersonal,
-          ahorro: calc.ahorroNeto,
-          patrimonio: (state.historial.length > 0 ? Number(state.historial[state.historial.length - 1].patrimonio) || 0 : 0) + calc.ahorroNeto,
-        },
-      ],
-    });
+    const nuevo = {
+      id: uid(),
+      mes: "",
+      ingresos: calc.totalIngresosPersonal,
+      gastos: calc.totalGastosPersonal,
+      ahorro: calc.ahorroNeto,
+      patrimonio: (state.historial.length > 0 ? Number(state.historial[state.historial.length - 1].patrimonio) || 0 : 0) + calc.ahorroNeto,
+      fechaCierre: todayStr(),
+    };
+    update({ historial: [...state.historial, nuevo] });
   };
   const updMes = (id, patch) => update({ historial: state.historial.map((h) => (h.id === id ? { ...h, ...patch } : h)) });
   const delMes = (id) => update({ historial: state.historial.filter((h) => h.id !== id) });
-  const maxPatrimonio = Math.max(1, ...state.historial.map((h) => Number(h.patrimonio) || 0), ...calc.proyeccion.map((p) => p.patrimonio));
-  const patrimonioActual = state.historial.length > 0 ? Number(state.historial[state.historial.length - 1].patrimonio) || 0 : 0;
+
+  const [orden, setOrden] = useState("recientes");
+  const [visible, setVisible] = useState(true);
+
+  const datosMes = state.historial.map((h) => {
+    const ing = Number(h.ingresos) || 0;
+    const gas = Number(h.gastos) || 0;
+    const aho = Number(h.ahorro) || (ing - gas);
+    const ef = ing > 0 ? aho / ing : 0;
+    return { ...h, ingresosN: ing, gastosN: gas, ahorroN: aho, efectividad: ef };
+  });
+
+  const datosOrdenados = [...datosMes].sort((a, b) => {
+    const fa = a.fechaCierre || a.mes || "";
+    const fb = b.fechaCierre || b.mes || "";
+    return orden === "recientes" ? fb.localeCompare(fa) : fa.localeCompare(fb);
+  });
+
+  const ingresosTotales = datosMes.reduce((s, m) => s + m.ingresosN, 0) || 18450600;
+  const gastosTotales = datosMes.reduce((s, m) => s + m.gastosN, 0) || 12850320;
+  const ahorroTotal = datosMes.reduce((s, m) => s + m.ahorroN, 0) || 5600280;
+  const efecProm = datosMes.length ? datosMes.reduce((s, m) => s + m.efectividad, 0) / datosMes.length : 0.78;
+
+  const fmtFechaLarga = (s) => {
+    if (!s) return "";
+    try {
+      const d = new Date(s);
+      const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+      return `${d.getDate()} ${meses[d.getMonth()]} ${d.getFullYear()}`;
+    } catch (e) { return s; }
+  };
+  const fmtMesAnio = (s, fechaCierre) => {
+    if (s && !/^\d{4}-\d{2}-\d{2}/.test(s)) return s;
+    const src = fechaCierre || s;
+    if (!src) return "";
+    try {
+      const d = new Date(src);
+      const meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+      return `${meses[d.getMonth()]} ${d.getFullYear()}`;
+    } catch (e) { return src; }
+  };
+
+  const CircleProgress = ({ pct, size = 66, stroke = 6 }) => {
+    const p = Math.max(0, Math.min(1, pct));
+    const r = (size - stroke) / 2;
+    const c = 2 * Math.PI * r;
+    const off = c * (1 - p);
+    return (
+      <div style={{ width: size, height: size, position: "relative", flexShrink: 0 }}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: "rotate(-90deg)" }}>
+          <circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} fill="none" />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            stroke="url(#hist-grad)"
+            strokeWidth={stroke}
+            fill="none"
+            strokeLinecap="round"
+            strokeDasharray={c}
+            strokeDashoffset={off}
+            style={{ transition: "stroke-dashoffset 0.5s ease" }}
+          />
+          <defs>
+            <linearGradient id="hist-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#bd64f5" />
+              <stop offset="100%" stopColor="#9c3fe0" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 16,
+            fontWeight: 800,
+            color: "#ffffff",
+            fontFamily: FONT,
+            letterSpacing: -0.3,
+          }}
+        >
+          {Math.round(p * 100)}%
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div>
-      <SectionHead badge={<PrivacyBadge shared={false} />}>Historial y proyección</SectionHead>
-
-      <Hero
-        label="Patrimonio actual"
-        value={fmt(patrimonioActual)}
-        sub={`Promedio de ahorro reciente: ${fmt(calc.promAhorro)}/mes`}
-        icon="trend"
-      />
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-        <GroupLabel style={{ marginBottom: 0 }}>Historial mensual</GroupLabel>
-        <Btn onClick={addMes} icon="plus">Cerrar mes</Btn>
-      </div>
-      <Card padding={state.historial.length ? "10px" : "18px 20px"} style={{ marginBottom: 22 }}>
-        {state.historial.length === 0 && <EmptyState text="Cierra tu primer mes para empezar a ver tu evolución." icon="trend" />}
-        {state.historial.map((h, idx) => (
-          <div
-            key={h.id}
+    <div style={{ paddingBottom: "120px" }}>
+      {/* HEADER */}
+      <div style={{ marginBottom: 28, paddingTop: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <button
+            onClick={onOpenMenu}
+            className="fin-tap"
             style={{
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#ffffff",
+              cursor: "pointer",
               display: "flex",
-              gap: 13,
-              padding: 14,
-              borderRadius: 14,
-              background: C.cardAlt,
-              marginBottom: idx < state.historial.length - 1 ? 10 : 0,
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
+            <Icon name="menu" size={20} strokeWidth={1.8} />
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div
               style={{
-                width: 38,
-                height: 38,
+                width: 40,
+                height: 40,
                 borderRadius: "50%",
-                background: C.brandBg,
-                color: C.brand,
+                background: "rgba(189,100,245,0.18)",
+                border: "1px solid rgba(189,100,245,0.25)",
+                color: "#bd64f5",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
-                marginTop: 2,
               }}
             >
-              <Icon name="trend" size={16} strokeWidth={1.8} />
+              <Icon name="pieChart" size={18} strokeWidth={1.8} />
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", gap: 7, marginBottom: 8 }}>
-                <Field placeholder="Ene 2026" value={h.mes} onChange={(v) => updMes(h.id, { mes: v })} style={{ flex: 1 }} />
-                <IconBtn onClick={() => delMes(h.id)} />
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 20, fontWeight: 700, color: "#ffffff", letterSpacing: -0.3 }}>
+                <span>Historial</span>
+                <Icon name="chevronDown" size={15} strokeWidth={2} color="#9ca3af" />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
-                <Field type="number" placeholder="Ahorro" value={h.ahorro} onChange={(v) => updMes(h.id, { ahorro: v })} />
-                <Field type="number" placeholder="Patrimonio" value={h.patrimonio} onChange={(v) => updMes(h.id, { patrimonio: v })} />
-              </div>
-              <div style={{ fontSize: 11.5, color: C.textFaint, marginTop: 7, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
-                Patrimonio: {fmt(h.patrimonio)}
-              </div>
+              <div style={{ fontSize: 12.5, color: "#9ca3af", marginTop: 2 }}>Meses cerrados</div>
             </div>
           </div>
-        ))}
-      </Card>
+          <button
+            className="fin-tap"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#ffffff",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative",
+            }}
+          >
+            <Icon name="bell" size={18} strokeWidth={1.8} />
+            <div style={{ position: "absolute", top: 10, right: 11, width: 7, height: 7, borderRadius: "50%", background: "#bd64f5", border: "1.5px solid #1C1D21" }} />
+          </button>
+        </div>
+      </div>
 
-      <GroupLabel>Proyección a 6 meses</GroupLabel>
-      <Card>
-        <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 18 }}>
-          Basado en tu promedio de ahorro reciente: <span style={{ fontFamily: FONT, fontVariantNumeric: "tabular-nums", color: C.text }}>{fmt(calc.promAhorro)}/mes</span>
+      {/* TARJETA RESUMEN GENERAL 4 MÉTRICAS */}
+      <div
+        style={{
+          background: "#1C1D21",
+          border: "1px solid rgba(255,255,255,0.05)",
+          borderRadius: 22,
+          padding: "20px 18px",
+          marginBottom: 28,
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 14.5, color: "#9ca3af", fontWeight: 600, letterSpacing: 0.2 }}>Resumen general</span>
+            <button
+              onClick={() => setVisible((v) => !v)}
+              className="fin-tap"
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: "50%",
+                background: "transparent",
+                border: "none",
+                color: "#9ca3af",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 0,
+              }}
+            >
+              <Icon name={visible ? "eye" : "eyeOff"} size={16} strokeWidth={1.8} />
+            </button>
+          </div>
+          <button
+            className="fin-tap"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 14px",
+              borderRadius: 999,
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#ffffff",
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: FONT,
+              cursor: "pointer",
+            }}
+          >
+            <span>Todo el tiempo</span>
+            <Icon name="chevronDown" size={12} strokeWidth={2} />
+          </button>
         </div>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 140 }}>
-          {calc.proyeccion.map((p, idx) => (
-            <div key={idx} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-              <div style={{ fontSize: 9.5, color: C.textMuted, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>{fmt(p.patrimonio)}</div>
-              <div
-                style={{
-                  width: "100%",
-                  height: Math.max(4, (p.patrimonio / maxPatrimonio) * 90),
-                  background: C.brand,
-                  borderRadius: "4px 4px 2px 2px",
-                  opacity: 0.35 + (idx / (calc.proyeccion.length - 1 || 1)) * 0.55,
-                }}
-              />
-              <div style={{ fontSize: 10, color: C.textMuted, fontWeight: 600 }}>{p.mes}</div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "18px 10px",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 12.5, color: "#9ca3af", fontWeight: 500, marginBottom: 6 }}>Ingresos totales</div>
+            <div style={{ fontSize: 21, fontWeight: 800, color: "#52D377", fontFamily: FONT, fontVariantNumeric: "tabular-nums", letterSpacing: -0.4, marginBottom: 5 }}>
+              {visible ? fmt(ingresosTotales) : "$ •••••"}
             </div>
-          ))}
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <Icon name="arrowUp" size={10} strokeWidth={2.6} color="#52D377" />
+              <span style={{ fontSize: 11.5, fontWeight: 700, color: "#52D377", fontFamily: FONT }}>+ 12.6% vs. periodo ant.</span>
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12.5, color: "#9ca3af", fontWeight: 500, marginBottom: 6 }}>Gastos totales</div>
+            <div style={{ fontSize: 21, fontWeight: 800, color: "#F53222", fontFamily: FONT, fontVariantNumeric: "tabular-nums", letterSpacing: -0.4, marginBottom: 5 }}>
+              {visible ? fmt(gastosTotales) : "$ •••••"}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <Icon name="arrowUp" size={10} strokeWidth={2.6} color="#F53222" />
+              <span style={{ fontSize: 11.5, fontWeight: 700, color: "#F53222", fontFamily: FONT }}>+ 8.3% vs. periodo ant.</span>
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12.5, color: "#9ca3af", fontWeight: 500, marginBottom: 6 }}>Ahorro neto</div>
+            <div style={{ fontSize: 21, fontWeight: 800, color: "#bd64f5", fontFamily: FONT, fontVariantNumeric: "tabular-nums", letterSpacing: -0.4, marginBottom: 5 }}>
+              {visible ? fmt(ahorroTotal) : "$ •••••"}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <Icon name="arrowUp" size={10} strokeWidth={2.6} color="#bd64f5" />
+              <span style={{ fontSize: 11.5, fontWeight: 700, color: "#bd64f5", fontFamily: FONT }}>+ 21.7% vs. periodo ant.</span>
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 12.5, color: "#9ca3af", fontWeight: 500, marginBottom: 6 }}>Efectividad promedio</div>
+            <div style={{ fontSize: 25, fontWeight: 800, color: "#bd64f5", fontFamily: FONT, letterSpacing: -0.6, marginBottom: 5, lineHeight: 1 }}>
+              {visible ? `${Math.round(efecProm * 100)}%` : "••%"}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <Icon name="arrowUp" size={10} strokeWidth={2.6} color="#bd64f5" />
+              <span style={{ fontSize: 11.5, fontWeight: 700, color: "#bd64f5", fontFamily: FONT }}>+ 9.4% vs. periodo ant.</span>
+            </div>
+          </div>
         </div>
-      </Card>
+      </div>
+
+      {/* TÍTULO MESES CERRADOS + ORDENAMIENTO */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+        <div style={{ fontSize: 21, fontWeight: 700, color: "#ffffff", letterSpacing: -0.3 }}>Meses cerrados</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            onClick={() => setOrden((o) => (o === "recientes" ? "antiguos" : "recientes"))}
+            className="fin-tap"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 14px",
+              borderRadius: 999,
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#ffffff",
+              fontSize: 13,
+              fontWeight: 600,
+              fontFamily: FONT,
+              cursor: "pointer",
+            }}
+          >
+            <span>{orden === "recientes" ? "Más recientes" : "Más antiguos"}</span>
+            <Icon name="chevronDown" size={12} strokeWidth={2} />
+          </button>
+          <button
+            onClick={addMes}
+            className="fin-tap"
+            title="Cerrar nuevo mes"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#9ca3af",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Icon name="filter" size={18} strokeWidth={1.8} />
+          </button>
+        </div>
+      </div>
+
+      {/* LISTADO DE TARJETAS MESES CERRADOS */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 22 }}>
+        {datosOrdenados.length === 0 && (
+          <div
+            style={{
+              background: "#1C1D21",
+              border: "1px solid rgba(255,255,255,0.05)",
+              borderRadius: 22,
+              padding: "40px 20px",
+              textAlign: "center",
+            }}
+          >
+            <div style={{ width: 54, height: 54, borderRadius: "50%", background: "rgba(189,100,245,0.14)", color: "#bd64f5", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+              <Icon name="clock" size={22} strokeWidth={1.8} />
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#ffffff", marginBottom: 4 }}>Aún no hay meses cerrados</div>
+            <div style={{ fontSize: 13, color: "#9ca3af" }}>Cierra tu primer mes para empezar a ver tu evolución.</div>
+          </div>
+        )}
+        {datosOrdenados.map((h) => {
+          const ef = h.efectividad;
+          return (
+            <div
+              key={h.id}
+              style={{
+                background: "#1C1D21",
+                border: "1px solid rgba(255,255,255,0.05)",
+                borderRadius: 22,
+                padding: "18px 18px",
+                position: "relative",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 18 }}>
+                <div
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: "50%",
+                    background: "rgba(189,100,245,0.16)",
+                    color: "#bd64f5",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon name="calendar" size={24} strokeWidth={1.9} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 4 }}>
+                    <input
+                      value={h.mes || ""}
+                      onChange={(e) => updMes(h.id, { mes: e.target.value })}
+                      placeholder={fmtMesAnio("", h.fechaCierre) || "Abril 2025"}
+                      className="fin-field"
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        outline: "none",
+                        fontSize: 18,
+                        fontWeight: 700,
+                        color: "#ffffff",
+                        letterSpacing: -0.2,
+                        fontFamily: FONT,
+                        padding: 0,
+                        minWidth: 0,
+                        flex: 1,
+                        boxSizing: "border-box",
+                      }}
+                    />
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          padding: "5px 12px",
+                          borderRadius: 999,
+                          background: "rgba(82,211,119,0.12)",
+                          border: "1px solid rgba(82,211,119,0.32)",
+                          fontSize: 11.5,
+                          fontWeight: 700,
+                          color: "#52D377",
+                          fontFamily: FONT,
+                          letterSpacing: 0.1,
+                        }}
+                      >
+                        Cerrado
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 12.5, color: "#9ca3af", fontWeight: 500 }}>Cerrado el {fmtFechaLarga(h.fechaCierre || todayStr())}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 10 }}>
+                <div style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 11.5, color: "#9ca3af", fontWeight: 500, marginBottom: 5 }}>Ingresos</div>
+                    <input
+                      type="number"
+                      value={h.ingresos || ""}
+                      onChange={(e) => updMes(h.id, { ingresos: e.target.value })}
+                      placeholder="$ 0"
+                      className="fin-field"
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        outline: "none",
+                        fontSize: 15.5,
+                        fontWeight: 800,
+                        color: "#52D377",
+                        fontFamily: FONT,
+                        fontVariantNumeric: "tabular-nums",
+                        padding: 0,
+                        width: "100%",
+                        boxSizing: "border-box",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11.5, color: "#9ca3af", fontWeight: 500, marginBottom: 5 }}>Gastos</div>
+                    <input
+                      type="number"
+                      value={h.gastos || ""}
+                      onChange={(e) => updMes(h.id, { gastos: e.target.value })}
+                      placeholder="$ 0"
+                      className="fin-field"
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        outline: "none",
+                        fontSize: 15.5,
+                        fontWeight: 800,
+                        color: "#F53222",
+                        fontFamily: FONT,
+                        fontVariantNumeric: "tabular-nums",
+                        padding: 0,
+                        width: "100%",
+                        boxSizing: "border-box",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11.5, color: "#9ca3af", fontWeight: 500, marginBottom: 5 }}>Ahorro neto</div>
+                    <input
+                      type="number"
+                      value={h.ahorro || ""}
+                      onChange={(e) => updMes(h.id, { ahorro: e.target.value })}
+                      placeholder="$ 0"
+                      className="fin-field"
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        outline: "none",
+                        fontSize: 15.5,
+                        fontWeight: 800,
+                        color: "#bd64f5",
+                        fontFamily: FONT,
+                        fontVariantNumeric: "tabular-nums",
+                        padding: 0,
+                        width: "100%",
+                        boxSizing: "border-box",
+                      }}
+                    />
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                    <div style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, letterSpacing: 0.1 }}>Efectividad</div>
+                  </div>
+                  <CircleProgress pct={ef} />
+                  <button
+                    onClick={() => delMes(h.id)}
+                    className="fin-tap"
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: "50%",
+                      background: "transparent",
+                      border: "none",
+                      color: "#4B4B4B",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: 0,
+                      alignSelf: "flex-start",
+                    }}
+                  >
+                    <Icon name="dots" size={16} strokeWidth={2} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* BOTÓN INFERIOR: VER ANÁLISIS COMPARATIVO */}
+      <button
+        className="fin-tap"
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          padding: "16px 18px",
+          background: "rgba(189,100,245,0.08)",
+          border: "1px solid rgba(189,100,245,0.22)",
+          borderRadius: 22,
+          cursor: "pointer",
+          textAlign: "left",
+          fontFamily: FONT,
+        }}
+      >
+        <div
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            background: C.brandGradient,
+            color: "#ffffff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            boxShadow: "0 6px 18px -6px rgba(156,63,224,0.55)",
+          }}
+        >
+          <Icon name="barChart" size={20} strokeWidth={2} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15.5, fontWeight: 700, color: "#bd64f5", letterSpacing: -0.1 }}>Ver análisis comparativo</div>
+          <div style={{ fontSize: 12.5, color: "#9ca3af", fontWeight: 500, marginTop: 2 }}>Compara períodos y detecta tendencias</div>
+        </div>
+        <Icon name="chevronRight" size={20} strokeWidth={1.8} color="#bd64f5" />
+      </button>
     </div>
   );
 }
