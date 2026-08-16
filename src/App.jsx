@@ -176,6 +176,11 @@ const Icon = ({ name, size = 18, color = "currentColor", strokeWidth = 1.6 }) =>
     clock: <><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3.2 2" /></>,
     filter: <><path d="M3.8 5.5h16.4" /><path d="M6.2 12h11.6" /><path d="M9 18.5h6" /></>,
     barChart: <><path d="M5.5 18.5V11M9.5 18.5V5.5M13.5 18.5v-7.5M17.5 18.5V9" /></>,
+    shield: <><path d="M12 3.8l7 2.8v5.5c0 4.2-3 7.7-7 8.5-4-.8-7-4.3-7-8.5V6.6l7-2.8z" /></>,
+    dollar: <><path d="M12 2.8v18.4" /><path d="M16.5 7.6c-.7-1.2-2.2-1.8-4.5-1.8-3.2 0-5.4 1.7-5.4 4.2 0 2.9 3.5 3.9 5.8 4.5 2.2.6 3.4 1.4 3.4 2.9 0 1.9-2 3.1-4.7 3.1-2.9 0-4.7-1.5-5.2-3.3" /></>,
+    palette: <><circle cx="12" cy="12" r="8.5" /><circle cx="7.5" cy="10.5" r="1" fill={color} /><circle cx="12" cy="7.2" r="1" fill={color} /><circle cx="16.5" cy="10.5" r="1" fill={color} /><circle cx="15.2" cy="15.2" r="1" fill={color} /></>,
+    moon: <><path d="M19.5 14.5A7.5 7.5 0 019.5 4.5a6.5 6.5 0 1010 10z" /></>,
+    gear: <><circle cx="12" cy="12" r="2.8" /><path d="M12 2v2.8M12 19.2V22M4.2 4.2l2 2M17.8 17.8l2 2M2 12h2.8M19.2 12H22M4.2 19.8l2-2M17.8 6.2l2-2" /></>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
@@ -1641,7 +1646,7 @@ function AppInner({ user }) {
             <Historial state={state} update={update} calc={calc} onOpenMenu={() => setMenuOpen(true)} />
           </div>
           <div style={{ flex: `0 0 ${100 / TABS.length}%`, minWidth: 0, padding: "4px 20px 20px 20px", boxSizing: "border-box" }}>
-            <ConfigTab state={state} update={update} tasaLoading={tasaLoading} tasaError={tasaError} onRefreshTasa={refrescarTasa} />
+            <ConfigTab state={state} update={update} tasaLoading={tasaLoading} tasaError={tasaError} onRefreshTasa={refrescarTasa} onOpenMenu={() => setMenuOpen(true)} />
           </div>
         </div>
       </div>
@@ -6017,92 +6022,918 @@ function Historial({ state, update, calc, onOpenMenu }) {
 /* ============================================================
    CONFIG
    ============================================================ */
-function ConfigTab({ state, update, tasaLoading, tasaError, onRefreshTasa }) {
+function ConfigTab({ state, update, tasaLoading, tasaError, onRefreshTasa, onOpenMenu }) {
   const setCfg = (key, val) => update({ config: { ...state.config, [key]: val } });
-  const sumaPct = (Number(state.config.pctNecesidad) || 0) + (Number(state.config.pctGusto) || 0) + (Number(state.config.pctAhorro) || 0);
+
+  const pctN = Math.round((Number(state.config.pctNecesidad) || 0) * 100);
+  const pctG = Math.round((Number(state.config.pctGusto) || 0) * 100);
+  const pctA = Math.round((Number(state.config.pctAhorro) || 0) * 100);
+  const mesesFondo = Math.max(1, Number(state.config.mesesFondo) || 6);
+  const umbralH = Number(state.config.umbralHormiga) || 0;
+  const tasaRef = Number(state.config.tasaRef) || 0;
+
+  const [tasaModo, setTasaModo] = useState(state.config.tasaAutoFecha === todayStr() ? "auto" : "manual");
+  const [notifOn, setNotifOn] = useState(true);
+
+  const step = 5;
+  const adjustPct = (which, delta) => {
+    const cur = {
+      necesidad: pctN,
+      gusto: pctG,
+      ahorro: pctA,
+    }[which];
+    const next = Math.max(0, Math.min(100, cur + delta));
+    const keyP = { necesidad: "pctNecesidad", gusto: "pctGusto", ahorro: "pctAhorro" }[which];
+    setCfg(keyP, next / 100);
+  };
+  const resetRegla = () => {
+    setCfg("pctNecesidad", 0.5);
+    setCfg("pctGusto", 0.3);
+    setCfg("pctAhorro", 0.2);
+  };
+  const adjustMeses = (delta) => {
+    const n = Math.max(1, Math.min(24, mesesFondo + delta));
+    setCfg("mesesFondo", n);
+  };
+
+  const fmtTasa = (v) => {
+    const n = Number(v) || 0;
+    if (!n) return "$ 0.00 ARS";
+    return "$ " + n.toLocaleString("es-AR", { maximumFractionDigits: 2, minimumFractionDigits: 2 }).replace(",", "X").replace(".", ",").replace("X", ".") + " ARS";
+  };
+
+  const RowIcon = ({ name, bg, color, size = 20 }) => (
+    <div
+      style={{
+        width: 42,
+        height: 42,
+        borderRadius: "50%",
+        background: bg,
+        color: color,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+      }}
+    >
+      <Icon name={name} size={size} strokeWidth={1.9} />
+    </div>
+  );
 
   return (
-    <div>
-      <SectionHead badge={<PrivacyBadge shared={false} />}>Configuración</SectionHead>
-      <div style={{ fontSize: 12.5, color: C.textMuted, marginTop: 4, marginBottom: 22 }}>
-        El motor del sistema. Ajusta esto una vez y rara vez lo vuelves a tocar.
-      </div>
-
-      <GroupLabel>Parámetros generales</GroupLabel>
-      <Card style={{ marginBottom: 22 }}>
-        <ConfigField
-          label="Tasa de cambio de referencia"
-          hint={
-            tasaError
-              ? tasaError
-              : state.config.tasaAutoFecha === todayStr()
-              ? `Actualizada hoy automáticamente (${todayStr()}).`
-              : "Se actualiza sola una vez al día. También puedes refrescarla a mano."
-          }
-        >
-          <div style={{ display: "flex", gap: 8 }}>
-            <Field type="number" value={state.config.tasaRef} onChange={(v) => setCfg("tasaRef", v)} />
-            <button
-              onClick={onRefreshTasa}
-              disabled={tasaLoading}
-              title="Actualizar tasa automáticamente"
+    <div style={{ paddingBottom: "120px" }}>
+      {/* HEADER */}
+      <div style={{ marginBottom: 30, paddingTop: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <button
+            onClick={onOpenMenu}
+            className="fin-tap"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#ffffff",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Icon name="menu" size={20} strokeWidth={1.8} />
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div
               style={{
-                flexShrink: 0,
-                width: 42,
-                borderRadius: 10,
-                background: C.cardAlt,
-                border: `1px solid ${C.border}`,
-                color: tasaLoading ? C.textFaint : C.money,
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                background: "rgba(189,100,245,0.18)",
+                border: "1px solid rgba(189,100,245,0.25)",
+                color: "#bd64f5",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                cursor: tasaLoading ? "not-allowed" : "pointer",
+                flexShrink: 0,
+              }}
+            >
+              <Icon name="gear" size={18} strokeWidth={1.8} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 20, fontWeight: 700, color: "#ffffff", letterSpacing: -0.3 }}>
+                <span>Configuración</span>
+                <Icon name="chevronDown" size={15} strokeWidth={2} color="#9ca3af" />
+              </div>
+              <div style={{ fontSize: 12.5, color: "#9ca3af", marginTop: 2 }}>Ajustes del sistema</div>
+            </div>
+          </div>
+          <button
+            className="fin-tap"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#ffffff",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative",
+            }}
+          >
+            <Icon name="bell" size={18} strokeWidth={1.8} />
+            <div style={{ position: "absolute", top: 10, right: 11, width: 7, height: 7, borderRadius: "50%", background: "#bd64f5", border: "1.5px solid #1C1D21" }} />
+          </button>
+        </div>
+      </div>
+
+      {/* SECCIÓN: REGLA 50/30/20 */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+          <span style={{ fontSize: 19, fontWeight: 700, color: "#ffffff", letterSpacing: -0.2 }}>Regla 50/30/20</span>
+          <button
+            className="fin-tap"
+            title="Sobre la regla 50/30/20"
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: "50%",
+              background: "transparent",
+              border: "1px solid rgba(255,255,255,0.12)",
+              color: "#9ca3af",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 0,
+              cursor: "pointer",
+            }}
+          >
+            <Icon name="help" size={12} strokeWidth={2} />
+          </button>
+        </div>
+        <div
+          style={{
+            background: "#1C1D21",
+            border: "1px solid rgba(255,255,255,0.05)",
+            borderRadius: 22,
+            padding: "22px 18px",
+          }}
+        >
+          <div style={{ fontSize: 14, color: "#9ca3af", fontWeight: 500, marginBottom: 18 }}>Define cómo se distribuye tu dinero</div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            {/* CARD 50% NECESIDADES */}
+            <div
+              style={{
+                background: "rgba(255,255,255,0.02)",
+                border: "1.5px solid rgba(189,100,245,0.45)",
+                borderRadius: 16,
+                padding: "16px 12px 14px 12px",
+                position: "relative",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  top: 12,
+                  right: 12,
+                  width: 22,
+                  height: 22,
+                  borderRadius: "50%",
+                  background: C.brandGradient,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#ffffff",
+                }}
+              >
+                <Icon name="check" size={13} strokeWidth={3} />
+              </div>
+              <div style={{ fontSize: 36, fontWeight: 800, color: "#bd64f5", fontFamily: FONT, letterSpacing: -1.2, lineHeight: 1, marginBottom: 10 }}>
+                {pctN}%
+              </div>
+              <div style={{ fontSize: 15.5, fontWeight: 700, color: "#ffffff", marginBottom: 5 }}>Necesidades</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", lineHeight: 1.4, marginBottom: 12 }}>Gastos esenciales para tu día a día</div>
+              <div style={{ width: "100%", height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)", marginBottom: 12, overflow: "hidden" }}>
+                <div style={{ width: `${pctN}%`, height: "100%", background: "linear-gradient(90deg,#bd64f5 0%,#9c3fe0 100%)", borderRadius: 999 }} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
+                <button
+                  onClick={() => adjustPct("necesidad", -step)}
+                  className="fin-tap"
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: "50%",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    color: "#ffffff",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    lineHeight: 1,
+                  }}
+                >
+                  −
+                </button>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "#ffffff", fontFamily: FONT }}>{pctN}%</div>
+                <button
+                  onClick={() => adjustPct("necesidad", step)}
+                  className="fin-tap"
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: "50%",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    color: "#ffffff",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    lineHeight: 1,
+                  }}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* CARD 30% GUSTOS */}
+            <div
+              style={{
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: 16,
+                padding: "16px 12px 14px 12px",
+              }}
+            >
+              <div style={{ fontSize: 36, fontWeight: 800, color: "#6366f1", fontFamily: FONT, letterSpacing: -1.2, lineHeight: 1, marginBottom: 10 }}>
+                {pctG}%
+              </div>
+              <div style={{ fontSize: 15.5, fontWeight: 700, color: "#ffffff", marginBottom: 5 }}>Gustos</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", lineHeight: 1.4, marginBottom: 12 }}>Disfruta tu dinero con conciencia</div>
+              <div style={{ width: "100%", height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)", marginBottom: 12, overflow: "hidden" }}>
+                <div style={{ width: `${pctG}%`, height: "100%", background: "linear-gradient(90deg,#7c7fff 0%,#6366f1 100%)", borderRadius: 999 }} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
+                <button
+                  onClick={() => adjustPct("gusto", -step)}
+                  className="fin-tap"
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: "50%",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    color: "#ffffff",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    lineHeight: 1,
+                  }}
+                >
+                  −
+                </button>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "#ffffff", fontFamily: FONT }}>{pctG}%</div>
+                <button
+                  onClick={() => adjustPct("gusto", step)}
+                  className="fin-tap"
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: "50%",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    color: "#ffffff",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    lineHeight: 1,
+                  }}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* CARD 20% AHORRO */}
+            <div
+              style={{
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: 16,
+                padding: "16px 12px 14px 12px",
+              }}
+            >
+              <div style={{ fontSize: 36, fontWeight: 800, color: C.warn, fontFamily: FONT, letterSpacing: -1.2, lineHeight: 1, marginBottom: 10 }}>
+                {pctA}%
+              </div>
+              <div style={{ fontSize: 15.5, fontWeight: 700, color: "#ffffff", marginBottom: 5 }}>Ahorro e inversión</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", lineHeight: 1.4, marginBottom: 12 }}>Construye tu futuro financiero</div>
+              <div style={{ width: "100%", height: 6, borderRadius: 999, background: "rgba(255,255,255,0.06)", marginBottom: 12, overflow: "hidden" }}>
+                <div style={{ width: `${pctA}%`, height: "100%", background: `linear-gradient(90deg,#FFB020 0%,${C.warn} 100%)`, borderRadius: 999 }} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
+                <button
+                  onClick={() => adjustPct("ahorro", -step)}
+                  className="fin-tap"
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: "50%",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    color: "#ffffff",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    lineHeight: 1,
+                  }}
+                >
+                  −
+                </button>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "#ffffff", fontFamily: FONT }}>{pctA}%</div>
+                <button
+                  onClick={() => adjustPct("ahorro", step)}
+                  className="fin-tap"
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: "50%",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    color: "#ffffff",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    lineHeight: 1,
+                  }}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={resetRegla}
+            className="fin-tap"
+            style={{
+              width: "100%",
+              marginTop: 18,
+              padding: "13px 16px",
+              borderRadius: 14,
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              color: "#bd64f5",
+              fontSize: 14,
+              fontWeight: 700,
+              fontFamily: FONT,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+            }}
+          >
+            <Icon name="refresh" size={16} strokeWidth={2} />
+            Restablecer valores por defecto
+          </button>
+        </div>
+      </div>
+
+      {/* SECCIÓN: FONDO DE EMERGENCIA */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+          <span style={{ fontSize: 19, fontWeight: 700, color: "#ffffff", letterSpacing: -0.2 }}>Fondo de emergencia</span>
+          <button
+            className="fin-tap"
+            title="Qué es el fondo de emergencia"
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: "50%",
+              background: "transparent",
+              border: "1px solid rgba(255,255,255,0.12)",
+              color: "#9ca3af",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 0,
+              cursor: "pointer",
+            }}
+          >
+            <Icon name="help" size={12} strokeWidth={2} />
+          </button>
+        </div>
+        <div
+          style={{
+            background: "#1C1D21",
+            border: "1px solid rgba(255,255,255,0.05)",
+            borderRadius: 22,
+            padding: "18px 18px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <RowIcon name="shield" bg="rgba(189,100,245,0.16)" color="#bd64f5" size={22} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15.5, fontWeight: 700, color: "#ffffff", marginBottom: 3 }}>Meses objetivo</div>
+              <div style={{ fontSize: 12.5, color: "#9ca3af", lineHeight: 1.4 }}>
+                Define cuántos meses de gastos quieres tener cubiertos en tu fondo de emergencia.
+              </div>
+            </div>
+          </div>
+          <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <button
+                onClick={() => adjustMeses(-1)}
+                className="fin-tap"
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  color: "#ffffff",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 0,
+                  fontSize: 22,
+                  fontWeight: 700,
+                  lineHeight: 1,
+                }}
+              >
+                −
+              </button>
+              <div style={{ fontSize: 26, fontWeight: 800, color: "#ffffff", fontFamily: FONT, letterSpacing: -0.6, minWidth: 30, textAlign: "center" }}>
+                {mesesFondo}
+              </div>
+              <button
+                onClick={() => adjustMeses(1)}
+                className="fin-tap"
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  color: "#ffffff",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 0,
+                  fontSize: 22,
+                  fontWeight: 700,
+                  lineHeight: 1,
+                }}
+              >
+                +
+              </button>
+            </div>
+            <span
+              style={{
+                display: "inline-flex",
+                padding: "6px 12px",
+                borderRadius: 999,
+                background: "rgba(82,211,119,0.1)",
+                border: "1px solid rgba(82,211,119,0.25)",
+                fontSize: 11.5,
+                fontWeight: 700,
+                color: "#52D377",
+                fontFamily: FONT,
+              }}
+            >
+              Recomendado: 3 - 6 meses
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* SECCIÓN: GASTO HORMIGA */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+          <span style={{ fontSize: 19, fontWeight: 700, color: "#ffffff", letterSpacing: -0.2 }}>Gasto Hormiga</span>
+          <button
+            className="fin-tap"
+            title="Qué es el gasto hormiga"
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: "50%",
+              background: "transparent",
+              border: "1px solid rgba(255,255,255,0.12)",
+              color: "#9ca3af",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 0,
+              cursor: "pointer",
+            }}
+          >
+            <Icon name="help" size={12} strokeWidth={2} />
+          </button>
+        </div>
+        <div
+          style={{
+            background: "#1C1D21",
+            border: "1px solid rgba(255,255,255,0.05)",
+            borderRadius: 22,
+            padding: "18px 18px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <RowIcon name="ant" bg="rgba(189,100,245,0.16)" color="#bd64f5" size={22} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15.5, fontWeight: 700, color: "#ffffff", marginBottom: 3 }}>Umbral por operación</div>
+              <div style={{ fontSize: 12.5, color: "#9ca3af", lineHeight: 1.4 }}>
+                Cualquier gasto menor o igual a este monto será marcado como gasto hormiga.
+              </div>
+            </div>
+          </div>
+          <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                padding: "11px 16px",
+                borderRadius: 14,
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(255,255,255,0.07)",
+              }}
+            >
+              <span style={{ fontSize: 18, color: "#9ca3af", fontWeight: 700, marginRight: 10 }}>$</span>
+              <input
+                type="number"
+                value={umbralH || ""}
+                onChange={(e) => setCfg("umbralHormiga", e.target.value)}
+                placeholder="2,000"
+                className="fin-field"
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  fontSize: 17,
+                  fontWeight: 700,
+                  color: "#ffffff",
+                  fontFamily: FONT,
+                  fontVariantNumeric: "tabular-nums",
+                  padding: 0,
+                  width: 140,
+                  minWidth: 0,
+                  textAlign: "right",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+            <span
+              style={{
+                display: "inline-flex",
+                padding: "6px 12px",
+                borderRadius: 999,
+                background: "rgba(189,100,245,0.12)",
+                border: "1px solid rgba(189,100,245,0.25)",
+                fontSize: 11.5,
+                fontWeight: 700,
+                color: "#bd64f5",
+                fontFamily: FONT,
+              }}
+            >
+              Actual: {fmt(umbralH)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* SECCIÓN: TIPO DE CAMBIO USD/ARS */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+          <span style={{ fontSize: 19, fontWeight: 700, color: "#ffffff", letterSpacing: -0.2 }}>Tipo de cambio USD/ARS</span>
+          <button
+            className="fin-tap"
+            title="Sobre la cotización"
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: "50%",
+              background: "transparent",
+              border: "1px solid rgba(255,255,255,0.12)",
+              color: "#9ca3af",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 0,
+              cursor: "pointer",
+            }}
+          >
+            <Icon name="help" size={12} strokeWidth={2} />
+          </button>
+        </div>
+        <div
+          style={{
+            background: "#1C1D21",
+            border: "1px solid rgba(255,255,255,0.05)",
+            borderRadius: 22,
+            padding: "18px 18px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+            <RowIcon name="dollar" bg="rgba(189,100,245,0.16)" color="#bd64f5" size={22} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, color: "#9ca3af", fontWeight: 500, marginBottom: 4 }}>Cotización actual</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                {tasaModo === "manual" ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "baseline",
+                      padding: "8px 12px",
+                      borderRadius: 12,
+                      background: "rgba(255,255,255,0.02)",
+                      border: "1px solid rgba(189,100,245,0.3)",
+                    }}
+                  >
+                    <span style={{ fontSize: 16, color: "#bd64f5", fontWeight: 800, marginRight: 8 }}>$</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={tasaRef || ""}
+                      onChange={(e) => {
+                        setCfg("tasaRef", e.target.value);
+                      }}
+                      placeholder="1,265.50"
+                      className="fin-field"
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        outline: "none",
+                        fontSize: 22,
+                        fontWeight: 800,
+                        color: "#bd64f5",
+                        fontFamily: FONT,
+                        fontVariantNumeric: "tabular-nums",
+                        padding: 0,
+                        width: 180,
+                        boxSizing: "border-box",
+                      }}
+                    />
+                    <span style={{ fontSize: 16, color: "#bd64f5", fontWeight: 800, marginLeft: 8 }}>ARS</span>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 24, fontWeight: 800, color: "#bd64f5", fontFamily: FONT, letterSpacing: -0.6, lineHeight: 1 }}>
+                    {fmtTasa(tasaRef)}
+                  </div>
+                )}
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "7px 13px",
+                    borderRadius: 999,
+                    background: "rgba(82,211,119,0.1)",
+                    border: "1px solid rgba(82,211,119,0.3)",
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    color: "#52D377",
+                    fontFamily: FONT,
+                  }}
+                >
+                  <Icon name="check" size={13} strokeWidth={3} />
+                  Actualizado
+                  <Icon name="chevronDown" size={11} strokeWidth={2.4} />
+                </span>
+              </div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 6 }}>
+                Última actualización: {state.config.tasaAutoFecha === todayStr() ? "Hoy, 09:15" : state.config.tasaAutoFecha ? `${state.config.tasaAutoFecha}` : "Nunca"}
+              </div>
+            </div>
+          </div>
+
+          {/* SWITCH AUTO/MANUAL */}
+          <div
+            style={{
+              marginTop: 18,
+              padding: 5,
+              borderRadius: 14,
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 4,
+            }}
+          >
+            {[
+              { id: "auto", label: "Automático (BCRA API)", dot: true },
+              { id: "manual", label: "Manual", dot: false },
+            ].map((t) => {
+              const act = tasaModo === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setTasaModo(t.id)}
+                  className="fin-tap"
+                  style={{
+                    padding: "11px 14px",
+                    borderRadius: 10,
+                    background: act ? "rgba(189,100,245,0.16)" : "transparent",
+                    border: act ? "1px solid rgba(189,100,245,0.35)" : "1px solid transparent",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    fontSize: 13.5,
+                    fontWeight: act ? 700 : 600,
+                    color: act ? "#bd64f5" : "#9ca3af",
+                    fontFamily: FONT,
+                  }}
+                >
+                  <span>{t.label}</span>
+                  {t.dot && act && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#bd64f5" }} />}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* BOTÓN ACTUALIZAR AHORA */}
+          <button
+            onClick={onRefreshTasa}
+            disabled={tasaLoading}
+            className="fin-tap"
+            style={{
+              width: "100%",
+              marginTop: 14,
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              padding: "14px 14px",
+              borderRadius: 16,
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.05)",
+              cursor: tasaLoading ? "not-allowed" : "pointer",
+              opacity: tasaLoading ? 0.6 : 1,
+              fontFamily: FONT,
+              textAlign: "left",
+            }}
+          >
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                background: "rgba(189,100,245,0.14)",
+                border: "1px solid rgba(189,100,245,0.2)",
+                color: "#bd64f5",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
               }}
             >
               <div style={{ display: "flex", animation: tasaLoading ? "spin 0.8s linear infinite" : "none" }}>
-                <Icon name="refresh" size={16} strokeWidth={2} color={tasaLoading ? C.textFaint : C.money} />
+                <Icon name="refresh" size={18} strokeWidth={1.9} />
               </div>
               {tasaLoading && <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14.5, fontWeight: 700, color: "#ffffff", letterSpacing: -0.1 }}>Actualizar ahora</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>
+                {tasaError ? tasaError : "Obtiene la cotización más reciente del BCRA"}
+              </div>
+            </div>
+            <Icon name="chevronRight" size={18} strokeWidth={1.9} color="#9ca3af" />
+          </button>
+        </div>
+      </div>
+
+      {/* SECCIÓN: OTRAS CONFIGURACIONES */}
+      <div style={{ marginBottom: 22 }}>
+        <div style={{ fontSize: 19, fontWeight: 700, color: "#ffffff", letterSpacing: -0.2, marginBottom: 14 }}>
+          Otras configuraciones
+        </div>
+        <div
+          style={{
+            background: "#1C1D21",
+            border: "1px solid rgba(255,255,255,0.05)",
+            borderRadius: 22,
+            overflow: "hidden",
+          }}
+        >
+          {/* FILA: TEMA */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              padding: "17px 18px",
+              borderBottom: "1px solid rgba(255,255,255,0.05)",
+            }}
+          >
+            <RowIcon name="palette" bg="rgba(189,100,245,0.16)" color="#bd64f5" size={20} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#ffffff" }}>Tema de la aplicación</div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 13.5, color: "#9ca3af", fontWeight: 600 }}>Oscuro</span>
+              <Icon name="chevronRight" size={18} strokeWidth={1.8} color="#4B4B4B" />
+            </div>
+          </div>
+
+          {/* FILA: NOTIFICACIONES */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              padding: "17px 18px",
+              borderBottom: "1px solid rgba(255,255,255,0.05)",
+            }}
+          >
+            <RowIcon name="bell" bg="rgba(189,100,245,0.16)" color="#bd64f5" size={20} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#ffffff", marginBottom: 2 }}>Notificaciones</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", lineHeight: 1.3 }}>Configura alertas y recordatorios</div>
+            </div>
+            <button
+              onClick={() => setNotifOn((v) => !v)}
+              className="fin-tap"
+              style={{
+                width: 52,
+                height: 30,
+                borderRadius: 999,
+                background: notifOn ? "linear-gradient(90deg,#bd64f5 0%,#9c3fe0 100%)" : "rgba(255,255,255,0.1)",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+                position: "relative",
+                flexShrink: 0,
+                transition: "background 0.25s ease",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  top: 3,
+                  left: notifOn ? 25 : 3,
+                  width: 24,
+                  height: 24,
+                  borderRadius: "50%",
+                  background: "#ffffff",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.35)",
+                  transition: "left 0.25s ease",
+                }}
+              />
             </button>
           </div>
-        </ConfigField>
-        <ConfigField label="Tu sueldo fijo mensual" hint="Petnova te paga esto primero, siempre, antes de cualquier otra cosa.">
-          <Field type="number" value={state.config.sueldo} onChange={(v) => setCfg("sueldo", v)} />
-        </ConfigField>
-        <ConfigField label="Umbral de gasto hormiga" hint="Cualquier gasto por debajo de este monto se marca como hormiga.">
-          <Field type="number" value={state.config.umbralHormiga} onChange={(v) => setCfg("umbralHormiga", v)} />
-        </ConfigField>
-        <ConfigField label="Meses de cobertura del fondo">
-          <Field type="number" value={state.config.mesesFondo} onChange={(v) => setCfg("mesesFondo", v)} />
-        </ConfigField>
-      </Card>
 
-      <GroupLabel>Regla de distribución (50/30/20)</GroupLabel>
-      <Card>
-        <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 18 }}>Debe sumar 100%. Ajusta si tu realidad es distinta.</div>
-        <ConfigField label="Necesidades">
-          <Field type="number" value={state.config.pctNecesidad * 100} onChange={(v) => setCfg("pctNecesidad", (Number(v) || 0) / 100)} />
-        </ConfigField>
-        <ConfigField label="Gustos">
-          <Field type="number" value={state.config.pctGusto * 100} onChange={(v) => setCfg("pctGusto", (Number(v) || 0) / 100)} />
-        </ConfigField>
-        <ConfigField label="Ahorro / Inversión">
-          <Field type="number" value={state.config.pctAhorro * 100} onChange={(v) => setCfg("pctAhorro", (Number(v) || 0) / 100)} />
-        </ConfigField>
-        <div style={{ textAlign: "right", fontWeight: 700, color: sumaPct === 1 ? C.money : C.bad, marginTop: 10, fontFamily: FONT, fontVariantNumeric: "tabular-nums" }}>
-          Suma: {pct(sumaPct)}
+          {/* FILA: SEGURIDAD */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              padding: "17px 18px",
+            }}
+          >
+            <RowIcon name="lock" bg="rgba(189,100,245,0.16)" color="#bd64f5" size={20} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#ffffff", marginBottom: 2 }}>Seguridad</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", lineHeight: 1.3 }}>PIN, biometría y privacidad</div>
+            </div>
+            <Icon name="chevronRight" size={18} strokeWidth={1.8} color="#4B4B4B" />
+          </div>
         </div>
-      </Card>
-    </div>
-  );
-}
-
-function ConfigField({ label, hint, children }) {
-  return (
-    <div style={{ marginBottom: 16 }}>
-      <div style={{ fontSize: 11, color: C.textFaint, marginBottom: 8, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
-      {children}
-      {hint && <div style={{ fontSize: 11.5, color: C.textFaint, marginTop: 6 }}>{hint}</div>}
+      </div>
     </div>
   );
 }
